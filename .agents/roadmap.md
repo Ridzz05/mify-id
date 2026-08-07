@@ -29,8 +29,8 @@ Setiap agen yang menyelesaikan tugas terstruktur (membuat fitur baru, mengubah a
 
 ### [08 Agustus 2026] - Landing Studio Headline Mark Preview
 - **Editor feedback:** Added a layered headline textarea in `resources/js/Pages/SiteStudio/Index.jsx` that marks the configured `hero.highlight` phrase with the existing Neon Lime token while keeping the real textarea accessible and editable.
-- **Behavior:** The mark follows EN/ID locale changes, headline edits, phrase edits, disabled highlight style, special characters, and textarea scrolling without changing the persisted config shape or public renderer.
-- **Verification:** Vite production build passes; the phrase-splitting regression check passes.
+- **Behavior:** The mark follows EN/ID locale changes, headline edits, phrase edits, disabled highlight style, special characters, and textarea scrolling without changing the persisted config shape or public renderer. Editors can now select any phrase in the headline and click `Mark selected text` to save the current locale's highlight phrase; selecting also enables the marker style when it was disabled.
+- **Verification:** Vite production build and the full PHP test suite pass.
 
 ### [08 Agustus 2026] - Landing Studio V2 Full-Page Editability
 - **Gap closed:** Replaced the previous Hero-first/heading-only Studio with a V2 normalized contract covering global shell copy, hero panels/meta/targets, discipline groups and items, systems selection/presentation, transformation rows, process steps, principles, intake field copy/success states, and semantic visibility/shape/motion controls.
