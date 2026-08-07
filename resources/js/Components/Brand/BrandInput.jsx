@@ -1,3 +1,5 @@
+import { useId } from 'react';
+
 export default function BrandInput({
     label,
     error,
@@ -5,14 +7,18 @@ export default function BrandInput({
     className = '',
     ...props
 }) {
+    const generatedId = useId();
+    const inputId = props.id || generatedId;
+
     return (
         <div className="flex flex-col gap-1.5 w-full">
             {label && (
-                <label className="text-[10px] font-black uppercase tracking-widest text-white/50 pl-1 select-none">
+                <label htmlFor={inputId} className="text-[10px] font-black uppercase tracking-widest text-white/50 pl-1 select-none">
                     {label}
                 </label>
             )}
             <input
+                id={inputId}
                 type={type}
                 className={`brand-input ${error ? 'border-red-500/50 focus:border-red-500/80' : ''} ${className}`}
                 {...props}

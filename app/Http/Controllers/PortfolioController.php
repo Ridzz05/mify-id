@@ -29,10 +29,15 @@ class PortfolioController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
+            'system_code' => 'nullable|string|max:32|unique:portfolios,system_code',
             'category' => 'required|string|max:255',
             'description' => 'required|string',
+            'problem' => 'nullable|string',
+            'solution' => 'nullable|string',
+            'result' => 'nullable|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'image_url_input' => 'nullable|string|max:1000',
+            'image_alt' => 'nullable|string|max:255',
             'project_url' => 'nullable|string|max:255',
             'tech_stack' => 'nullable|array',
             'tech_stack.*' => 'string',
@@ -48,13 +53,19 @@ class PortfolioController extends Controller
         }
 
         $slug = Str::slug($validated['title']) . '-' . Str::random(4);
+        $systemCode = $validated['system_code'] ?? $this->nextSystemCode();
 
         $portfolio = Portfolio::create([
             'title' => $validated['title'],
             'slug' => $slug,
+            'system_code' => $systemCode,
             'category' => $validated['category'],
             'description' => $validated['description'],
+            'problem' => $validated['problem'] ?? null,
+            'solution' => $validated['solution'] ?? null,
+            'result' => $validated['result'] ?? null,
             'image_path' => $imagePath,
+            'image_alt' => $validated['image_alt'] ?? ($imagePath ? "{$validated['title']} system evidence" : null),
             'project_url' => $validated['project_url'] ?? null,
             'tech_stack' => $validated['tech_stack'] ?? ['Laravel', 'React'],
             'is_featured' => $request->boolean('is_featured', true),
@@ -76,10 +87,15 @@ class PortfolioController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
+            'system_code' => 'nullable|string|max:32|unique:portfolios,system_code,' . $portfolio->id,
             'category' => 'required|string|max:255',
             'description' => 'required|string',
+            'problem' => 'nullable|string',
+            'solution' => 'nullable|string',
+            'result' => 'nullable|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'image_url_input' => 'nullable|string|max:1000',
+            'image_alt' => 'nullable|string|max:255',
             'project_url' => 'nullable|string|max:255',
             'tech_stack' => 'nullable|array',
             'tech_stack.*' => 'string',
@@ -98,8 +114,13 @@ class PortfolioController extends Controller
         }
 
         $portfolio->title = $validated['title'];
+        $portfolio->system_code = $validated['system_code'] ?? $portfolio->system_code;
         $portfolio->category = $validated['category'];
         $portfolio->description = $validated['description'];
+        $portfolio->problem = $validated['problem'] ?? null;
+        $portfolio->solution = $validated['solution'] ?? null;
+        $portfolio->result = $validated['result'] ?? null;
+        $portfolio->image_alt = $validated['image_alt'] ?? ($portfolio->image_path ? "{$portfolio->title} system evidence" : null);
         $portfolio->project_url = $validated['project_url'] ?? null;
         if (isset($validated['tech_stack'])) {
             $portfolio->tech_stack = $validated['tech_stack'];
@@ -138,5 +159,12 @@ class PortfolioController extends Controller
         ]);
 
         return redirect()->back()->with('success', 'Portfolio project deleted successfully.');
+    }
+
+    private function nextSystemCode(): string
+    {
+        $next = ((int) Portfolio::max('id')) + 1;
+
+        return 'SYS-' . str_pad((string) $next, 3, '0', STR_PAD_LEFT);
     }
 }

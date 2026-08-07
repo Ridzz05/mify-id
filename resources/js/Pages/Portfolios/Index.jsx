@@ -1,562 +1,211 @@
-import { useState, useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Head, useForm, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { 
-    Briefcase, 
-    Plus, 
-    PencilSimple, 
-    Trash, 
-    Check, 
-    X, 
-    Star, 
-    Link as LinkIcon, 
-    UploadSimple, 
+import {
+    ArrowUpRight,
+    Check,
+    FolderSimple,
     MagnifyingGlass,
-    Eye,
-    Globe,
-    FolderSimple
+    PencilSimple,
+    Plus,
+    Star,
+    Trash,
+    UploadSimple,
+    X,
 } from '@phosphor-icons/react';
 
-export default function PortfoliosIndex({ portfolios = [], categories = [] }) {
-    const [search, setSearch] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState('All');
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingPortfolio, setEditingPortfolio] = useState(null);
-    const [deleteConfirmPortfolio, setDeleteConfirmPortfolio] = useState(null);
-    const [imagePreview, setImagePreview] = useState(null);
-    
-    const fileInputRef = useRef(null);
+const blank = {
+    system_code: '',
+    title: '',
+    category: 'Web System',
+    description: '',
+    problem: '',
+    solution: '',
+    result: '',
+    image: null,
+    image_url_input: '',
+    image_alt: '',
+    project_url: '',
+    tech_stack: 'Laravel, React, Inertia',
+    is_featured: true,
+    order: 0,
+};
 
-    const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
-        title: '',
-        category: 'Web System',
-        description: '',
-        image: null,
-        image_url_input: '',
-        project_url: '',
-        tech_stack: 'Laravel 13, React 19, Inertia.js',
-        is_featured: true,
-        order: 0,
+export default function PortfoliosIndex({ portfolios = [], categories = [] }) {
+    const [query, setQuery] = useState('');
+    const [category, setCategory] = useState('All');
+    const [modalOpen, setModalOpen] = useState(false);
+    const [editing, setEditing] = useState(null);
+    const [preview, setPreview] = useState(null);
+    const fileRef = useRef(null);
+    const { data, setData, processing, errors, reset, clearErrors } = useForm(blank);
+    const categoryList = ['All', ...new Set([...categories, ...portfolios.map((portfolio) => portfolio.category)])];
+    const visible = portfolios.filter((portfolio) => {
+        const haystack = [portfolio.system_code, portfolio.title, portfolio.description, portfolio.problem, portfolio.solution, portfolio.result].join(' ').toLowerCase();
+        return haystack.includes(query.toLowerCase()) && (category === 'All' || portfolio.category === category);
     });
 
-    const openCreateModal = () => {
-        setEditingPortfolio(null);
+    const openCreate = () => {
+        setEditing(null);
         reset();
         clearErrors();
-        setImagePreview(null);
-        setIsModalOpen(true);
+        setPreview(null);
+        setModalOpen(true);
     };
 
-    const openEditModal = (portfolio) => {
-        setEditingPortfolio(portfolio);
+    const openEdit = (portfolio) => {
+        setEditing(portfolio);
         clearErrors();
         setData({
+            system_code: portfolio.system_code || '',
             title: portfolio.title || '',
             category: portfolio.category || 'Web System',
             description: portfolio.description || '',
+            problem: portfolio.problem || '',
+            solution: portfolio.solution || '',
+            result: portfolio.result || '',
             image: null,
             image_url_input: portfolio.image_path || '',
+            image_alt: portfolio.image_alt || '',
             project_url: portfolio.project_url || '',
-            tech_stack: Array.isArray(portfolio.tech_stack) 
-                ? portfolio.tech_stack.join(', ') 
-                : (portfolio.tech_stack || ''),
-            is_featured: portfolio.is_featured ?? true,
+            tech_stack: (portfolio.tech_stack || []).join(', '),
+            is_featured: Boolean(portfolio.is_featured),
             order: portfolio.order || 0,
         });
-        setImagePreview(portfolio.image_url);
-        setIsModalOpen(true);
+        setPreview(portfolio.image_url || null);
+        setModalOpen(true);
     };
 
-    const handleFileChange = (e) => {
-        const file = e.target.files[0];
+    const closeModal = () => {
+        setModalOpen(false);
+        setEditing(null);
+        reset();
+    };
+
+    const selectFile = (event) => {
+        const file = event.target.files?.[0];
         if (file) {
             setData('image', file);
-            setImagePreview(URL.createObjectURL(file));
+            setPreview(URL.createObjectURL(file));
         }
     };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-
-        // Convert tech_stack string to array
-        const techArray = typeof data.tech_stack === 'string'
-            ? data.tech_stack.split(',').map(s => s.trim()).filter(Boolean)
-            : data.tech_stack;
-
+    const submit = (event) => {
+        event.preventDefault();
         const formData = new FormData();
-        formData.append('title', data.title);
-        formData.append('category', data.category);
-        formData.append('description', data.description);
-        if (data.image) {
-            formData.append('image', data.image);
-        }
-        if (data.image_url_input) {
-            formData.append('image_url_input', data.image_url_input);
-        }
-        if (data.project_url) {
-            formData.append('project_url', data.project_url);
-        }
-        techArray.forEach((tech, index) => {
-            formData.append(`tech_stack[${index}]`, tech);
+        Object.entries(data).forEach(([key, value]) => {
+            if (key !== 'tech_stack' && key !== 'image' && value !== null && value !== '') formData.append(key, value);
         });
-        formData.append('is_featured', data.is_featured ? '1' : '0');
-        formData.append('order', data.order);
-
-        if (editingPortfolio) {
-            router.post(route('portfolios.update', editingPortfolio.id), formData, {
-                onSuccess: () => {
-                    setIsModalOpen(false);
-                    reset();
-                },
-                forceFormData: true,
-            });
-        } else {
-            router.post(route('portfolios.store'), formData, {
-                onSuccess: () => {
-                    setIsModalOpen(false);
-                    reset();
-                },
-                forceFormData: true,
-            });
-        }
+        if (data.image) formData.append('image', data.image);
+        String(data.tech_stack || '').split(',').map((item) => item.trim()).filter(Boolean).forEach((item, index) => formData.append(`tech_stack[${index}]`, item));
+        formData.set('is_featured', data.is_featured ? '1' : '0');
+        router.post(editing ? route('portfolios.update', editing.id) : route('portfolios.store'), formData, { forceFormData: true, onSuccess: closeModal });
     };
 
-    const handleDelete = () => {
-        if (!deleteConfirmPortfolio) return;
-        router.delete(route('portfolios.destroy', deleteConfirmPortfolio.id), {
-            onSuccess: () => {
-                setDeleteConfirmPortfolio(null);
-            }
-        });
-    };
-
-    const handleToggleFeatured = (portfolio) => {
+    const toggleFeatured = (portfolio) => {
         const formData = new FormData();
-        formData.append('title', portfolio.title);
-        formData.append('category', portfolio.category);
-        formData.append('description', portfolio.description);
+        const fields = ['system_code', 'title', 'category', 'description', 'problem', 'solution', 'result', 'image_alt', 'project_url', 'order'];
+        fields.forEach((field) => formData.append(field, portfolio[field] ?? ''));
+        (portfolio.tech_stack || []).forEach((tech, index) => formData.append(`tech_stack[${index}]`, tech));
         formData.append('is_featured', portfolio.is_featured ? '0' : '1');
-
-        router.post(route('portfolios.update', portfolio.id), formData, {
-            preserveScroll: true,
-            forceFormData: true,
-        });
+        router.post(route('portfolios.update', portfolio.id), formData, { forceFormData: true, preserveScroll: true });
     };
 
-    // Filtering logic
-    const filteredPortfolios = portfolios.filter(p => {
-        const matchesSearch = p.title.toLowerCase().includes(search.toLowerCase()) || 
-                              p.description.toLowerCase().includes(search.toLowerCase());
-        const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
-        return matchesSearch && matchesCategory;
-    });
-
-    const categoryList = ['All', ...new Set([...categories, ...portfolios.map(p => p.category)])];
+    const remove = (portfolio) => {
+        if (window.confirm(`Delete ${portfolio.title}?`)) router.delete(route('portfolios.destroy', portfolio.id), { preserveScroll: true });
+    };
 
     return (
-        <AdminLayout activeTab="portfolios" title="Portfolio Manager — MiFy Admin">
-            <Head title="Portfolio Manager | MiFy Admin" />
+        <AdminLayout activeTab="portfolios" title="Selected systems">
+            <Head title="Selected systems | Systemify" />
 
             <div className="space-y-8">
-                {/* Header Title Section */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
+                <div className="flex flex-col gap-4 border-b border-white/15 pb-7 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <div className="flex items-center gap-2 text-brand-lime text-xs font-mono tracking-wider uppercase mb-1">
-                            <Briefcase size={16} weight="duotone" />
-                            <span>Landing Page CMS</span>
-                        </div>
-                        <h1 className="text-2xl font-bold text-white tracking-tight">Portfolio Manager</h1>
-                        <p className="text-sm text-white/60 mt-1">
-                            Manage showcase projects displayed on the MiFy landing page. Upload custom covers, update tech stacks, and toggle feature status.
-                        </p>
+                        <p className="mono-meta text-brand-lime">Public evidence / {portfolios.length} records</p>
+                        <p className="mt-3 max-w-xl text-sm leading-6 text-white/55">Publish the problem, system, result, and stack that give prospective clients something concrete to evaluate.</p>
                     </div>
-
-                    <button
-                        onClick={openCreateModal}
-                        className="inline-flex items-center gap-2 bg-brand-lime text-brand-dark px-4 py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-brand-lime/90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-brand-lime/10 self-start md:self-auto"
-                    >
-                        <Plus size={16} weight="bold" />
-                        <span>Add Project</span>
-                    </button>
+                    <button type="button" onClick={openCreate} className="button-primary self-start py-2 text-[0.65rem]"><Plus size={15} weight="bold" /> Add system</button>
                 </div>
 
-                {/* Filter & Search Bar */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/5 p-4 rounded-xl border border-white/10">
-                    {/* Category Filter Tabs */}
-                    <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 scrollbar-none">
-                        {categoryList.map(cat => (
-                            <button
-                                key={cat}
-                                onClick={() => setSelectedCategory(cat)}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                                    selectedCategory === cat 
-                                        ? 'bg-brand-blue text-white shadow-md' 
-                                        : 'bg-white/5 text-white/70 hover:bg-white/10 hover:text-white'
-                                }`}
-                            >
-                                {cat}
-                            </button>
+                <div className="flex flex-col gap-3 border-y border-white/15 py-4 md:flex-row md:items-center">
+                    <label className="flex min-w-0 flex-1 items-center gap-3 border border-white/15 px-3 py-2">
+                        <MagnifyingGlass size={17} className="text-white/45" />
+                        <span className="sr-only">Search systems</span>
+                        <input value={query} onChange={(event) => setQuery(event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/35" placeholder="Search systems or evidence" />
+                    </label>
+                    <div className="flex gap-2 overflow-x-auto" aria-label="Filter systems by category">
+                        {categoryList.map((item) => <button type="button" key={item} onClick={() => setCategory(item)} className={`whitespace-nowrap border px-3 py-2 text-xs ${category === item ? 'border-brand-lime text-brand-lime' : 'border-white/15 text-white/50 hover:text-white'}`} aria-pressed={category === item}>{item}</button>)}
+                    </div>
+                </div>
+
+                {visible.length > 0 ? (
+                    <div className="border-t border-white/15">
+                        {visible.map((portfolio) => (
+                            <article key={portfolio.id} className="grid gap-5 border-b border-white/15 py-6 md:grid-cols-[12rem_minmax(0,1fr)_auto] md:items-start">
+                                <div className="aspect-video overflow-hidden border border-white/10 bg-white/[0.02]">
+                                    {portfolio.image_url ? <img src={portfolio.image_url} alt={portfolio.image_alt || `${portfolio.title} system evidence`} className="h-full w-full object-cover" loading="lazy" /> : <div className="flex h-full items-center justify-center p-4 text-center font-mono text-[0.62rem] uppercase tracking-[0.08em] text-white/35">Evidence image pending</div>}
+                                </div>
+                                <div className="min-w-0">
+                                    <div className="flex flex-wrap items-center gap-3">
+                                        <span className="mono-meta text-brand-lime">{portfolio.system_code || 'SYS—PENDING'}</span>
+                                        <span className="mono-meta text-white/45">{portfolio.category}</span>
+                                        {portfolio.is_featured && <span className="inline-flex items-center gap-1 font-mono text-[0.62rem] uppercase text-white/45"><Star size={13} weight="fill" className="text-brand-lime" /> Published</span>}
+                                    </div>
+                                    <h2 className="mt-2 text-lg font-semibold text-white">{portfolio.title}</h2>
+                                    <p className="mt-2 text-sm leading-6 text-white/55">{portfolio.description}</p>
+                                    <dl className="mt-4 grid gap-3 border-t border-white/10 pt-4 text-sm sm:grid-cols-3">
+                                        <div><dt className="mono-meta text-white/35">Problem</dt><dd className="mt-1 text-white/70">{portfolio.problem || 'Not documented'}</dd></div>
+                                        <div><dt className="mono-meta text-white/35">Result</dt><dd className="mt-1 text-white/70">{portfolio.result || 'Not documented'}</dd></div>
+                                        <div><dt className="mono-meta text-white/35">Stack</dt><dd className="mt-1 text-white/70">{(portfolio.tech_stack || []).join(' / ') || 'Not documented'}</dd></div>
+                                    </dl>
+                                </div>
+                                <div className="flex items-center gap-3 md:flex-col md:items-end">
+                                    <button type="button" onClick={() => toggleFeatured(portfolio)} className="text-xs text-white/50 hover:text-brand-lime">{portfolio.is_featured ? 'Unpublish' : 'Publish'}</button>
+                                    <div className="flex items-center gap-2">
+                                        <button type="button" onClick={() => openEdit(portfolio)} className="p-2 text-white/45 hover:text-white" title={`Edit ${portfolio.title}`} aria-label={`Edit ${portfolio.title}`}><PencilSimple size={16} /></button>
+                                        <button type="button" onClick={() => remove(portfolio)} className="p-2 text-white/45 hover:text-red-300" title={`Delete ${portfolio.title}`} aria-label={`Delete ${portfolio.title}`}><Trash size={16} /></button>
+                                        {portfolio.project_url && <a href={portfolio.project_url} target="_blank" rel="noreferrer" className="p-2 text-white/45 hover:text-brand-lime" title={`Open ${portfolio.title}`} aria-label={`Open ${portfolio.title}`}><ArrowUpRight size={16} /></a>}
+                                    </div>
+                                </div>
+                            </article>
                         ))}
-                    </div>
-
-                    {/* Search Bar */}
-                    <div className="relative w-full sm:w-64">
-                        <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
-                        <input
-                            type="text"
-                            placeholder="Search projects..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="w-full bg-brand-dark/60 border border-white/15 rounded-lg pl-9 pr-3 py-1.5 text-xs text-white placeholder-white/40 focus:outline-none focus:border-brand-lime transition-colors"
-                        />
-                    </div>
-                </div>
-
-                {/* Portfolio Grid */}
-                {filteredPortfolios.length === 0 ? (
-                    <div className="text-center py-16 bg-white/5 rounded-2xl border border-white/10 border-dashed">
-                        <FolderSimple size={48} className="mx-auto text-white/20 mb-3" weight="duotone" />
-                        <h3 className="text-base font-bold text-white mb-1">No Portfolio Projects Found</h3>
-                        <p className="text-xs text-white/50 max-w-sm mx-auto mb-6">
-                            {search || selectedCategory !== 'All' 
-                                ? 'No projects match your current search criteria.' 
-                                : 'Get started by creating your first portfolio showcase project.'}
-                        </p>
-                        <button
-                            onClick={openCreateModal}
-                            className="inline-flex items-center gap-2 bg-brand-lime text-brand-dark px-4 py-2 rounded-lg font-bold text-xs uppercase"
-                        >
-                            <Plus size={14} weight="bold" />
-                            <span>Add New Project</span>
-                        </button>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {filteredPortfolios.map((portfolio) => (
-                            <div 
-                                key={portfolio.id}
-                                className="group bg-white/5 border border-white/10 hover:border-brand-blue/50 rounded-2xl overflow-hidden transition-all duration-300 flex flex-col"
-                            >
-                                {/* Image Container */}
-                                <div className="relative h-48 overflow-hidden bg-brand-dark/80">
-                                    <img 
-                                        src={portfolio.image_url} 
-                                        alt={portfolio.title}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-brand-dark via-transparent to-transparent opacity-80" />
-                                    
-                                    {/* Category Badge */}
-                                    <span className="absolute top-3 left-3 bg-brand-lime text-brand-dark font-extrabold text-[10px] uppercase px-2.5 py-1 rounded shadow-md tracking-wider">
-                                        {portfolio.category}
-                                    </span>
-
-                                    {/* Featured Toggle Button */}
-                                    <button
-                                        onClick={() => handleToggleFeatured(portfolio)}
-                                        title={portfolio.is_featured ? 'Featured on Landing Page' : 'Hidden from Featured'}
-                                        className={`absolute top-3 right-3 p-2 rounded-lg backdrop-blur-md transition-all ${
-                                            portfolio.is_featured 
-                                                ? 'bg-amber-400 text-brand-dark shadow-lg' 
-                                                : 'bg-brand-dark/60 text-white/40 hover:text-white'
-                                        }`}
-                                    >
-                                        <Star size={16} weight={portfolio.is_featured ? 'fill' : 'bold'} />
-                                    </button>
-                                </div>
-
-                                {/* Content Details */}
-                                <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                                    <div className="space-y-2">
-                                        <h3 className="text-base font-bold text-white group-hover:text-brand-lime transition-colors line-clamp-1">
-                                            {portfolio.title}
-                                        </h3>
-                                        <p className="text-xs text-white/60 line-clamp-2 leading-relaxed">
-                                            {portfolio.description}
-                                        </p>
-                                    </div>
-
-                                    {/* Tech Stack Pills */}
-                                    {Array.isArray(portfolio.tech_stack) && portfolio.tech_stack.length > 0 && (
-                                        <div className="flex flex-wrap gap-1.5 pt-2">
-                                            {portfolio.tech_stack.map((tech, idx) => (
-                                                <span 
-                                                    key={idx}
-                                                    className="bg-white/5 border border-white/10 text-white/80 text-[10px] px-2 py-0.5 rounded font-mono"
-                                                >
-                                                    {tech}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    {/* Card Footer Actions */}
-                                    <div className="pt-4 border-t border-white/10 flex items-center justify-between">
-                                        {portfolio.project_url ? (
-                                            <a 
-                                                href={portfolio.project_url} 
-                                                target="_blank" 
-                                                rel="noreferrer"
-                                                className="inline-flex items-center gap-1 text-[11px] text-brand-lime hover:underline font-medium"
-                                            >
-                                                <Globe size={13} />
-                                                <span>Live Demo</span>
-                                            </a>
-                                        ) : (
-                                            <span className="text-[11px] text-white/30 italic">No external link</span>
-                                        )}
-
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                onClick={() => openEditModal(portfolio)}
-                                                className="p-1.5 rounded bg-white/5 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                                                title="Edit Project"
-                                            >
-                                                <PencilSimple size={15} />
-                                            </button>
-                                            <button
-                                                onClick={() => setDeleteConfirmPortfolio(portfolio)}
-                                                className="p-1.5 rounded bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition-colors"
-                                                title="Delete Project"
-                                            >
-                                                <Trash size={15} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                    <div className="border border-dashed border-white/20 py-14 text-center text-sm text-white/45"><FolderSimple size={24} className="mx-auto mb-3 text-white/35" />No systems match the current filters.</div>
                 )}
             </div>
 
-            {/* Modal Form: Add / Edit Portfolio */}
-            {isModalOpen && (
-                <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-                    <div className="bg-slate-900 border border-white/15 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-6 my-8">
-                        {/* Modal Header */}
-                        <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                            <div>
-                                <h3 className="text-lg font-bold text-white">
-                                    {editingPortfolio ? 'Edit Portfolio Project' : 'Create New Portfolio Project'}
-                                </h3>
-                                <p className="text-xs text-white/50 mt-0.5">
-                                    Fill in the project details below. Images will be rendered on the public landing page.
-                                </p>
-                            </div>
-                            <button 
-                                onClick={() => setIsModalOpen(false)}
-                                className="p-2 text-white/50 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
-                            >
-                                <X size={18} />
-                            </button>
+            {modalOpen && (
+                <div className="fixed inset-0 z-[100] overflow-y-auto bg-brand-dark/90 p-4 sm:p-8" role="presentation">
+                    <div className="mx-auto max-w-3xl border border-white/20 bg-brand-dark p-6 sm:p-8" role="dialog" aria-modal="true" aria-labelledby="evidence-form-title">
+                        <div className="flex items-start justify-between gap-4 border-b border-white/15 pb-5">
+                            <div><p className="mono-meta text-brand-lime">{editing ? 'Edit evidence record' : 'New evidence record'}</p><h2 id="evidence-form-title" className="mt-2 text-2xl font-semibold tracking-[-0.04em]">{editing ? editing.title : 'Add selected system'}</h2></div>
+                            <button type="button" onClick={closeModal} className="p-2 text-white/45 hover:text-white" aria-label="Close evidence form"><X size={18} /></button>
                         </div>
-
-                        {/* Modal Form */}
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            {/* Title & Category Grid */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-white/80 uppercase tracking-wider">
-                                        Project Title *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={data.title}
-                                        onChange={(e) => setData('title', e.target.value)}
-                                        placeholder="e.g. Retail POS Cashier System"
-                                        className="w-full bg-brand-dark border border-white/15 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-lime"
-                                    />
-                                    {errors.title && <p className="text-rose-400 text-[11px]">{errors.title}</p>}
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-white/80 uppercase tracking-wider">
-                                        Category *
-                                    </label>
-                                    <select
-                                        value={data.category}
-                                        onChange={(e) => setData('category', e.target.value)}
-                                        className="w-full bg-brand-dark border border-white/15 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-lime"
-                                    >
-                                        <option value="Web System">Web System</option>
-                                        <option value="Mobile App">Mobile App</option>
-                                        <option value="AI Automation">AI Automation</option>
-                                        <option value="Marketing System">Marketing System</option>
-                                        <option value="E-Commerce">E-Commerce</option>
-                                    </select>
-                                    {errors.category && <p className="text-rose-400 text-[11px]">{errors.category}</p>}
+                        <form onSubmit={submit} className="mt-6 space-y-6">
+                            <div className="grid gap-4 sm:grid-cols-3">
+                                {[['system_code', 'System ID'], ['title', 'System title'], ['category', 'Category']].map(([key, label]) => <label key={key} className="block text-sm font-semibold text-white/75">{label}<input value={data[key] || ''} onChange={(event) => setData(key, event.target.value)} className="brand-input mt-2" placeholder={key === 'system_code' ? 'Auto: SYS-001' : ''} required={key === 'title' || key === 'category'} />{errors[key] && <span className="mt-1 block text-xs text-red-300">{errors[key]}</span>}</label>)}
+                            </div>
+                            <label className="block text-sm font-semibold text-white/75">Summary<textarea value={data.description} onChange={(event) => setData('description', event.target.value)} className="brand-input mt-2 min-h-24 resize-y" required />{errors.description && <span className="mt-1 block text-xs text-red-300">{errors.description}</span>}</label>
+                            <div className="grid gap-4 md:grid-cols-3">
+                                {[['problem', 'Problem'], ['solution', 'System / solution'], ['result', 'Result']].map(([key, label]) => <label key={key} className="block text-sm font-semibold text-white/75">{label}<textarea value={data[key] || ''} onChange={(event) => setData(key, event.target.value)} className="brand-input mt-2 min-h-32 resize-y" placeholder={`Document the ${label.toLowerCase()}.`} />{errors[key] && <span className="mt-1 block text-xs text-red-300">{errors[key]}</span>}</label>)}
+                            </div>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <label className="block text-sm font-semibold text-white/75">Stack<input value={data.tech_stack} onChange={(event) => setData('tech_stack', event.target.value)} className="brand-input mt-2" placeholder="Laravel, React, Inertia" /></label>
+                                <label className="block text-sm font-semibold text-white/75">Project URL<input value={data.project_url} onChange={(event) => setData('project_url', event.target.value)} className="brand-input mt-2" /></label>
+                            </div>
+                            <div className="border-t border-white/15 pt-5">
+                                <p className="mono-meta text-white/45">Approved evidence image</p>
+                                {preview && <img src={preview} alt={data.image_alt || 'Evidence preview'} className="mt-3 h-40 w-full object-cover" />}
+                                {!preview && <div className="mt-3 border border-dashed border-white/20 p-6 text-center font-mono text-[0.62rem] uppercase tracking-[0.08em] text-white/35">No image attached yet</div>}
+                                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                                    <button type="button" onClick={() => fileRef.current?.click()} className="flex flex-col items-center justify-center border border-dashed border-white/20 p-4 text-sm text-white/60 hover:border-brand-lime hover:text-brand-lime"><UploadSimple size={20} /><span className="mt-2">Upload approved image</span></button>
+                                    <div><input ref={fileRef} type="file" accept="image/*" onChange={selectFile} className="hidden" /><input value={data.image_url_input} onChange={(event) => { setData('image_url_input', event.target.value); setPreview(event.target.value); }} className="brand-input" placeholder="Or paste approved image URL" /><input value={data.image_alt} onChange={(event) => setData('image_alt', event.target.value)} className="brand-input mt-3" placeholder="Image description" /></div>
                                 </div>
                             </div>
-
-                            {/* Description */}
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-white/80 uppercase tracking-wider">
-                                    Project Description *
-                                </label>
-                                <textarea
-                                    required
-                                    rows={3}
-                                    value={data.description}
-                                    onChange={(e) => setData('description', e.target.value)}
-                                    placeholder="Explain key features, architecture, and business benefits..."
-                                    className="w-full bg-brand-dark border border-white/15 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-brand-lime resize-none"
-                                />
-                                {errors.description && <p className="text-rose-400 text-[11px]">{errors.description}</p>}
-                            </div>
-
-                            {/* Image Input Selection: File Upload OR Image URL */}
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-white/80 uppercase tracking-wider">
-                                    Project Cover Image
-                                </label>
-
-                                {imagePreview && (
-                                    <div className="relative h-32 rounded-lg overflow-hidden border border-white/15 bg-black/40">
-                                        <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setImagePreview(null);
-                                                setData('image', null);
-                                                setData('image_url_input', '');
-                                            }}
-                                            className="absolute top-2 right-2 bg-rose-600 text-white p-1 rounded-md hover:bg-rose-500 transition-colors"
-                                        >
-                                            <X size={14} />
-                                        </button>
-                                    </div>
-                                )}
-
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    {/* Upload File */}
-                                    <div>
-                                        <input
-                                            type="file"
-                                            ref={fileInputRef}
-                                            onChange={handleFileChange}
-                                            accept="image/*"
-                                            className="hidden"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => fileInputRef.current?.click()}
-                                            className="w-full bg-white/5 hover:bg-white/10 border border-white/15 border-dashed rounded-lg p-3 text-center transition-colors group"
-                                        >
-                                            <UploadSimple size={20} className="mx-auto text-brand-lime mb-1 group-hover:scale-110 transition-transform" />
-                                            <span className="text-xs font-medium text-white/80 block">Upload Local Image</span>
-                                            <span className="text-[10px] text-white/40 block">PNG, JPG, WebP (Max 5MB)</span>
-                                        </button>
-                                    </div>
-
-                                    {/* Image URL Input */}
-                                    <div className="space-y-1">
-                                        <input
-                                            type="text"
-                                            value={data.image_url_input}
-                                            onChange={(e) => {
-                                                setData('image_url_input', e.target.value);
-                                                setImagePreview(e.target.value);
-                                            }}
-                                            placeholder="Or paste Image URL..."
-                                            className="w-full bg-brand-dark border border-white/15 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-lime"
-                                        />
-                                        <span className="text-[10px] text-white/40 block">e.g. Unsplash URL or CDN link</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Tech Stack & Live Link */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-white/80 uppercase tracking-wider">
-                                        Tech Stack (Comma Separated)
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={data.tech_stack}
-                                        onChange={(e) => setData('tech_stack', e.target.value)}
-                                        placeholder="Laravel 13, React 19, Inertia"
-                                        className="w-full bg-brand-dark border border-white/15 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-lime"
-                                    />
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-white/80 uppercase tracking-wider">
-                                        Live Project URL (Optional)
-                                    </label>
-                                    <input
-                                        type="url"
-                                        value={data.project_url}
-                                        onChange={(e) => setData('project_url', e.target.value)}
-                                        placeholder="https://example.com"
-                                        className="w-full bg-brand-dark border border-white/15 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-lime"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Options: Featured & Order */}
-                            <div className="flex items-center justify-between pt-2 border-t border-white/10">
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={data.is_featured}
-                                        onChange={(e) => setData('is_featured', e.target.checked)}
-                                        className="w-4 h-4 rounded bg-brand-dark border-white/30 text-brand-lime focus:ring-brand-lime"
-                                    />
-                                    <span className="text-xs text-white font-medium">Show on Landing Page Featured Showcase</span>
-                                </label>
-                            </div>
-
-                            {/* Form Actions */}
-                            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsModalOpen(false)}
-                                    className="px-4 py-2 rounded-lg text-xs font-semibold text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={processing}
-                                    className="inline-flex items-center gap-2 bg-brand-lime text-brand-dark px-5 py-2 rounded-lg font-bold text-xs uppercase hover:bg-brand-lime/90 transition-all disabled:opacity-50"
-                                >
-                                    <Check size={14} weight="bold" />
-                                    <span>{editingPortfolio ? 'Update Project' : 'Save Project'}</span>
-                                </button>
-                            </div>
+                            <div className="flex flex-wrap items-center justify-between gap-4 border-t border-white/15 pt-5"><label className="flex items-center gap-3 text-sm text-white/70"><input type="checkbox" checked={Boolean(data.is_featured)} onChange={(event) => setData('is_featured', event.target.checked)} className="h-4 w-4 accent-brand-lime" /> Publish on public selected systems</label><div className="flex gap-3"><button type="button" onClick={closeModal} className="button-secondary text-white">Cancel</button><button type="submit" disabled={processing} className="button-primary">{processing ? 'Saving…' : editing ? 'Save evidence' : 'Save system'} <Check size={15} weight="bold" /></button></div></div>
                         </form>
-                    </div>
-                </div>
-            )}
-
-            {/* Modal Confirmation: Delete */}
-            {deleteConfirmPortfolio && (
-                <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-slate-900 border border-rose-500/30 rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4">
-                        <div className="flex items-center gap-3 text-rose-400">
-                            <Trash size={24} />
-                            <h3 className="text-base font-bold text-white">Delete Portfolio Project?</h3>
-                        </div>
-                        <p className="text-xs text-white/70 leading-relaxed">
-                            Are you sure you want to delete <span className="font-bold text-white">"{deleteConfirmPortfolio.title}"</span>? This action cannot be undone.
-                        </p>
-                        <div className="flex items-center justify-end gap-3 pt-2">
-                            <button
-                                onClick={() => setDeleteConfirmPortfolio(null)}
-                                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white/70 hover:text-white"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleDelete}
-                                className="bg-rose-600 hover:bg-rose-500 text-white px-4 py-1.5 rounded-lg text-xs font-bold transition-colors"
-                            >
-                                Delete
-                            </button>
-                        </div>
                     </div>
                 </div>
             )}

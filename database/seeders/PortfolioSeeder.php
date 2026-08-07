@@ -8,62 +8,48 @@ use Illuminate\Database\Seeder;
 class PortfolioSeeder extends Seeder
 {
     /**
-     * Run the database seeds.
+     * Seed truthful internal-system drafts. They stay unpublished until an
+     * approved evidence image or diagram is attached by an operator.
      */
     public function run(): void
     {
-        $portfolios = [
+        $systems = [
             [
-                'title' => 'OmniChannel Retail POS & Inventory Engine',
-                'slug' => 'omnichannel-retail-pos',
-                'category' => 'POS Cashier',
-                'description' => 'Real-time retail point of sale system with pessimistic inventory locking, instant barcode scanning, and SQLite ACID transaction safety.',
-                'image_path' => 'https://images.unsplash.com/photo-1556742049-0a6754099a6b?auto=format&fit=crop&w=1200&q=80',
-                'project_url' => 'https://mify.id',
-                'tech_stack' => ['Laravel 13', 'React 19', 'Inertia.js', 'Tailwind CSS'],
-                'is_featured' => true,
+                'system_code' => 'SYS-001',
+                'title' => 'Systemify Operations Workspace',
+                'slug' => 'systemify-operations-workspace',
+                'category' => 'Internal System',
+                'description' => 'A working view for project decisions, client intake, pipeline health, and operational activity.',
+                'problem' => 'Project state, client intake, and health signals were split across separate views.',
+                'solution' => 'One authenticated workspace that groups the next decision, project pipeline, intake queue, health, and activity.',
+                'result' => 'Operators can see what changed, decide what happens next, and verify the state of active work from one place.',
+                'image_path' => null,
+                'image_alt' => null,
+                'project_url' => null,
+                'tech_stack' => ['Laravel', 'React', 'Inertia', 'Tailwind'],
+                'is_featured' => false,
                 'order' => 1,
             ],
             [
-                'title' => 'Enterprise AI Brief Architect & Engine',
-                'slug' => 'enterprise-ai-brief-architect',
-                'category' => 'AI Automation',
-                'description' => 'Autonomous LLM system proposal generator converting raw client specifications into structured technical blueprints with zero latency.',
-                'image_path' => 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
-                'project_url' => 'https://mify.id',
-                'tech_stack' => ['NVIDIA LLM', 'Laravel API', 'Inertia', 'Phar Icons'],
-                'is_featured' => true,
+                'system_code' => 'SYS-002',
+                'title' => 'Systemify Client Intake Workflow',
+                'slug' => 'systemify-client-intake-workflow',
+                'category' => 'Workflow System',
+                'description' => 'A structured path from an initial system brief to discovery notes, review status, and project conversion.',
+                'problem' => 'Incoming requests needed a shared place for review, context, priority, and next action.',
+                'solution' => 'A client intake inbox with status movement, notes, priority, blueprint generation, and pipeline conversion seams.',
+                'result' => 'Every request has a visible state and an operator-facing next action instead of disappearing into a message thread.',
+                'image_path' => null,
+                'image_alt' => null,
+                'project_url' => null,
+                'tech_stack' => ['Laravel', 'React', 'Inertia', 'SQLite'],
+                'is_featured' => false,
                 'order' => 2,
-            ],
-            [
-                'title' => 'High-Velocity SaaS Subscription & Billing Portal',
-                'slug' => 'saas-subscription-billing-portal',
-                'category' => 'Web System',
-                'description' => 'Monolithic SaaS platform with compiled brand tokens, dark mode aesthetics, and zero client-side routing latency.',
-                'image_path' => 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80',
-                'project_url' => 'https://mify.id',
-                'tech_stack' => ['Laravel 13', 'React 19', 'Vite', 'Tailwind CSS v4'],
-                'is_featured' => true,
-                'order' => 3,
-            ],
-            [
-                'title' => 'Data-Driven Growth & Marketing Analytics Hub',
-                'slug' => 'data-driven-marketing-analytics-hub',
-                'category' => 'Marketing System',
-                'description' => 'Real-time performance tracking dashboard with interactive metrics cards, conversion monitoring, and automated lead capture.',
-                'image_path' => 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80',
-                'project_url' => 'https://mify.id',
-                'tech_stack' => ['React 19', 'Framer Motion', 'Chart.js', 'Laravel'],
-                'is_featured' => true,
-                'order' => 4,
             ],
         ];
 
-        foreach ($portfolios as $data) {
-            Portfolio::updateOrCreate(
-                ['slug' => $data['slug']],
-                $data
-            );
+        foreach ($systems as $data) {
+            Portfolio::updateOrCreate(['system_code' => $data['system_code']], $data);
         }
     }
 }

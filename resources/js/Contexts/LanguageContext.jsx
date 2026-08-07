@@ -5,11 +5,11 @@ const LanguageContext = createContext();
 
 export function LanguageProvider({ children }) {
     const [locale, setLocale] = useState(() => {
-        return localStorage.getItem('mify_locale') || 'en';
+        return localStorage.getItem('systemify_locale') || localStorage.getItem('mify_locale') || 'en';
     });
 
     useEffect(() => {
-        localStorage.setItem('mify_locale', locale);
+        localStorage.setItem('systemify_locale', locale);
     }, [locale]);
 
     const t = (path) => {

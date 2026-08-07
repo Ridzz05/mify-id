@@ -47,25 +47,40 @@ class BriefController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
-            'message' => 'required|string',
+            'company' => 'nullable|string|max:255',
+            'current_workflow' => 'nullable|string|required_without:message',
+            'operational_constraint' => 'nullable|string|required_without:message',
+            'desired_change' => 'nullable|string|required_without:message',
+            'budget' => 'nullable|string|max:255',
+            'timeline' => 'nullable|string|max:255',
+            'message' => 'nullable|string|required_without_all:current_workflow,operational_constraint,desired_change',
         ]);
 
-        // Auto-generate realistic metadata to show on the admin dashboard
-        // Parse company name from email domain
+        $company = $validated['company'] ?? null;
+
+        // Keep the previous company inference for older clients that only send name, email, and message.
         $domain = substr(strrchr($validated['email'], "@"), 1);
-        $company = null;
-        if ($domain && !in_array($domain, ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com'])) {
+        if (!$company && $domain && !in_array($domain, ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com'])) {
             $parts = explode('.', $domain);
             $company = ucwords($parts[0] ?? 'Agency');
-        } else {
+        } elseif (!$company) {
             $company = 'Freelance / Personal';
         }
 
-        // Random budget generator
-        $budgets = ['IDR 150M', 'IDR 300M', 'IDR 500M', 'IDR 750M', 'IDR 1.2B'];
-        $budget = $budgets[array_rand($budgets)];
+        $briefSections = [
+            'Current workflow' => $validated['current_workflow'] ?? null,
+            'Operational constraint' => $validated['operational_constraint'] ?? null,
+            'Desired change' => $validated['desired_change'] ?? null,
+            'Timeline' => $validated['timeline'] ?? null,
+        ];
+        $message = blank($validated['message'] ?? null)
+            ? collect($briefSections)
+                ->filter(fn ($value) => filled($value))
+                ->map(fn ($value, $label) => "{$label}: {$value}")
+                ->implode("\n\n")
+            : $validated['message'];
 
-        // Simple keyword-based tech stack generator
+        // Detect only technologies explicitly mentioned in the submitted brief.
         $techKeywords = [
             'laravel' => 'Laravel',
             'react' => 'React',
@@ -84,32 +99,34 @@ class BriefController extends Controller
         ];
 
         $stack = [];
-        $lowerMessage = strtolower($validated['message']);
-        $lowerName = strtolower($validated['name']);
+        $briefText = strtolower($message . ' ' . $validated['name']);
         
         foreach ($techKeywords as $key => $value) {
-            if (str_contains($lowerMessage, $key) || str_contains($lowerName, $key)) {
+            $pattern = $key === 'next'
+                ? '/\\bnext\\.js\\b/i'
+                : '/\\b' . preg_quote($key, '/') . '\\b/i';
+
+            if (preg_match($pattern, $briefText)) {
                 $stack[] = $value;
             }
-        }
-
-        // Ensure we always have some stacks if no keywords match
-        if (empty($stack)) {
-            $stack = ['Laravel', 'React', 'Tailwind'];
         }
 
         $brief = Brief::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'company' => $company,
-            'budget' => $budget,
-            'message' => $validated['message'],
+            'budget' => $validated['budget'] ?? null,
+            'current_workflow' => $validated['current_workflow'] ?? null,
+            'operational_constraint' => $validated['operational_constraint'] ?? null,
+            'desired_change' => $validated['desired_change'] ?? null,
+            'timeline' => $validated['timeline'] ?? null,
+            'message' => $message,
             'tech_stack' => $stack,
             'status' => 'pending',
         ]);
 
         AuditLog::create([
-            'event' => "Brief received: {$brief->company} ({$brief->budget})",
+            'event' => "Brief received: {$brief->company} (" . ($brief->budget ?: 'budget not set') . ")",
             'ip' => $request->ip() ?? '127.0.0.1',
         ]);
 
@@ -173,7 +190,7 @@ class BriefController extends Controller
         $blueprintData = null;
         $usedAi = false;
 
-        $prompt = "You are mify's AI System Architect Engine.
+        $prompt = "You are Systemify's AI System Architect Engine.
 Analyze the following client brief and generate a comprehensive digital system blueprint.
 
 CLIENT NAME: {$brief->name}
@@ -278,7 +295,7 @@ IMPORTANT:
             // ==========================================
             $message = strtolower($brief->message);
             $systemType = 'Custom Enterprise SaaS';
-            $desc = 'High-performance cloud-native software suite';
+            $desc = 'Cloud software suite shaped around the client workflow';
             
             if (str_contains($message, 'shop') || str_contains($message, 'commerce') || str_contains($message, 'store') || str_contains($message, 'payment') || str_contains($message, 'cart')) {
                 $systemType = 'Headless E-Commerce System';
@@ -336,7 +353,7 @@ IMPORTANT:
             
             $pitch .= "We would love to jump on a quick discovery call to walk you through this architecture and discuss the implementation timeline. Let us know what time works best for you next week!\n\n";
             $pitch .= "Best regards,\n";
-            $pitch .= "The mify Architecture Team";
+            $pitch .= "The Systemify Architecture Team";
 
             $timeline = [
                 [
@@ -410,4 +427,3 @@ IMPORTANT:
         return redirect()->back();
     }
 }
-

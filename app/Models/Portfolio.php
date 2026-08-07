@@ -13,9 +13,14 @@ class Portfolio extends Model
     protected $fillable = [
         'title',
         'slug',
+        'system_code',
         'category',
         'description',
+        'problem',
+        'solution',
+        'result',
         'image_path',
+        'image_alt',
         'project_url',
         'tech_stack',
         'is_featured',
@@ -33,7 +38,7 @@ class Portfolio extends Model
     ];
 
     /**
-     * Get public image URL or fallback placeholder.
+     * Get the approved evidence image URL, if one exists.
      */
     public function getImageUrlAttribute(): string
     {
@@ -44,7 +49,6 @@ class Portfolio extends Model
             return asset('storage/' . $this->image_path);
         }
 
-        // Return a sleek default SVG placeholder
-        return 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80';
+        return '';
     }
 }

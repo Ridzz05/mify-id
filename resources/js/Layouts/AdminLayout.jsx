@@ -1,220 +1,124 @@
 import { useState } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import { useTranslation } from '@/Contexts/LanguageContext';
-import { CustomCursor } from '@/Layouts/AppLayout';
-import { 
-    Layout, 
-    Lightning, 
-    EnvelopeSimple, 
-    Gear, 
-    Terminal, 
-    SignOut, 
-    House, 
-    List, 
-    X, 
-    Circle, 
-    User,
-    Shield,
-    ShoppingCart,
+import {
     Briefcase,
+    ChartLine,
+    EnvelopeSimple,
     Globe,
-    Monitor
+    List,
+    Lightning,
+    Monitor,
+    PaintBrush,
+    Pulse,
+    SignOut,
+    X,
 } from '@phosphor-icons/react';
 
-export default function AdminLayout({ children, activeTab = 'overview', title = 'Admin Panel' }) {
-    const user = usePage().props.auth.user;
-    const [sidebarOpen, setSidebarOpen] = useState(false);
-    const { locale, toggleLocale, t } = useTranslation();
+const SystemifyAdminMark = () => (
+    <span className="inline-flex items-center gap-2 text-white">
+        <span className="flex h-8 w-8 items-center justify-center border border-white/30 bg-brand-lime text-[10px] font-black text-brand-dark font-mono tracking-[-0.12em]">S/</span>
+        <span className="text-xl font-bold tracking-[-0.05em]">Systemify</span>
+    </span>
+);
 
-    // Sidebar navigation items
-    const navItems = [
+export default function AdminLayout({ children, activeTab = 'overview', title = 'Workspace' }) {
+    const { auth } = usePage().props;
+    const { locale, toggleLocale } = useTranslation();
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+
+    const navGroups = [
         {
-            id: 'overview',
-            label: t('common.dashboard'),
-            icon: Layout,
-            href: route('dashboard'),
+            label: locale === 'en' ? 'Operations' : 'Operasional',
+            items: [
+                { id: 'overview', label: locale === 'en' ? 'Overview' : 'Ringkasan', icon: ChartLine, href: route('dashboard') },
+                { id: 'pipelines', label: locale === 'en' ? 'Project pipeline' : 'Pipeline proyek', icon: Lightning, href: route('pipelines.index') },
+                { id: 'briefs', label: locale === 'en' ? 'Client briefs' : 'Brief klien', icon: EnvelopeSimple, href: route('briefs.index') },
+            ],
         },
         {
-            id: 'pipelines',
-            label: t('common.pipelines'),
-            icon: Lightning,
-            href: route('pipelines.index'),
-            badge: t('common.active'),
+            label: locale === 'en' ? 'Systems' : 'Sistem',
+            items: [
+                { id: 'portfolios', label: locale === 'en' ? 'Selected systems' : 'Sistem pilihan', icon: Briefcase, href: route('portfolios.index') },
+                { id: 'live_preview', label: locale === 'en' ? 'Live site' : 'Website live', icon: Monitor, href: route('live-preview.index') },
+            ],
         },
         {
-            id: 'briefs',
-            label: t('common.briefs'),
-            icon: EnvelopeSimple,
-            href: route('briefs.index'),
-            badge: 'New',
+            label: locale === 'en' ? 'Diagnostics' : 'Diagnostik',
+            items: [
+                { id: 'diagnostics', label: locale === 'en' ? 'Runtime checks' : 'Pemeriksaan runtime', icon: Pulse, href: route('diagnostics.index') },
+            ],
         },
         {
-            id: 'portfolios',
-            label: t('common.portfolios'),
-            icon: Briefcase,
-            href: route('portfolios.index'),
-            badge: 'Live',
+            label: locale === 'en' ? 'Site' : 'Site',
+            items: [
+                { id: 'site-studio', label: locale === 'en' ? 'Landing Studio' : 'Landing Studio', icon: PaintBrush, href: route('site-studio.index') },
+            ],
         },
-        {
-            id: 'live_preview',
-            label: t('common.live_preview'),
-            icon: Monitor,
-            href: route('live-preview.index'),
-            badge: 'Site',
-        },
-        {
-            id: 'settings',
-            label: t('common.settings'),
-            icon: Gear,
-            href: '#', // placeholder for settings
-        }
     ];
 
+    const closeSidebar = () => setSidebarOpen(false);
+
     return (
-        <div className="min-h-screen bg-brand-dark text-white font-sans selection:bg-brand-lime selection:text-brand-dark relative overflow-x-hidden flex">
-            
-            {/* Lapis 1: Subtle noise texture overlay */}
-            <div className="pointer-events-none fixed inset-0 z-0 opacity-[0.03]"
-                style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='1' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E\")" }}
-            />
-
-            {/* Lapis 2: Subtle Neon ambient glow in background */}
-            <div className="brand-glow top-0 left-0 w-[500px] h-[500px] bg-brand-lime/[0.02] blur-[150px] pointer-events-none absolute" />
-            <div className="brand-glow bottom-0 right-0 w-[500px] h-[500px] bg-brand-blue/[0.03] blur-[150px] pointer-events-none absolute" />
-
-            {/* Custom Cursor follower */}
-            <CustomCursor />
-
-            {/* SIDEBAR - Desktop (Fixed) & Mobile (Drawer) */}
-            <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-brand-dark/95 border-r border-white/5 flex flex-col justify-between transition-transform duration-300 xl:translate-x-0 xl:static ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-                
-                <div className="flex flex-col gap-8 py-6 px-5">
-                    {/* Sidebar Header Logo */}
-                    <div className="flex items-center justify-between">
-                        <Link href="/" className="flex items-center gap-2.5">
-                            <span className="w-7 h-7 rounded-lg bg-brand-lime flex items-center justify-center text-brand-dark font-black text-xs font-mono select-none">
-                                &lt;/&gt;
-                            </span>
-                            <span className="font-extrabold text-lg tracking-tight text-white">
-                                mify
-                            </span>
-                        </Link>
-                        {/* Close button for mobile sidebar */}
-                        <button 
-                            onClick={() => setSidebarOpen(false)}
-                            className="xl:hidden p-1 rounded hover:bg-white/5 text-white/60 hover:text-white"
-                        >
-                            <X className="w-5 h-5" weight="bold" />
-                        </button>
-                    </div>
-
-                    {/* Navigation Section */}
-                    <div className="flex flex-col gap-1.5 mt-4">
-                        <span className="text-[9px] font-black uppercase tracking-widest text-white/30 px-3 mb-2 block">
-                            Management console
-                        </span>
-                        
-                        {navItems.map((item) => {
-                            const IconComponent = item.icon;
-                            const isActive = activeTab === item.id;
-                            
-                            return (
-                                <Link
-                                    key={item.id}
-                                    href={item.href}
-                                    className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all group ${
-                                        isActive 
-                                            ? 'bg-brand-lime/10 text-brand-lime border border-brand-lime/10 shadow-[0_4px_15px_rgba(181,255,0,0.05)]' 
-                                            : 'text-white/50 hover:bg-white/5 hover:text-white border border-transparent'
-                                    }`}
-                                >
-                                    <div className="flex items-center gap-2.5">
-                                        <IconComponent className={`w-4 h-4 ${isActive ? 'text-brand-lime' : 'text-white/40 group-hover:text-white/70'}`} weight="bold" />
-                                        <span>{item.label}</span>
-                                    </div>
-                                    {item.badge && (
-                                        <span className={`px-1.5 py-0.5 rounded text-[8px] font-black tracking-wide uppercase ${
-                                            isActive 
-                                                ? 'bg-brand-lime/20 text-brand-lime' 
-                                                : 'bg-white/10 text-white/60 group-hover:bg-white/20'
-                                        }`}>
-                                            {item.badge}
-                                        </span>
-                                    )}
-                                </Link>
-                            );
-                        })}
-                    </div>
+        <div className="min-h-screen bg-brand-dark text-white font-sans selection:bg-brand-lime selection:text-brand-dark">
+            <aside className={`fixed inset-y-0 left-0 z-50 flex w-[17rem] flex-col border-r border-white/15 bg-brand-dark transition-transform duration-200 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                <div className="flex items-center justify-between border-b border-white/15 px-5 py-5">
+                    <Link href={route('dashboard')} onClick={closeSidebar} aria-label="Systemify workspace">
+                        <SystemifyAdminMark />
+                    </Link>
+                    <button type="button" className="border border-white/20 p-1.5 text-white/70 hover:text-white lg:hidden" onClick={closeSidebar} aria-label="Close workspace navigation"><X size={16} weight="bold" /></button>
                 </div>
 
-                {/* Sidebar Footer */}
-                <div className="p-5 border-t border-white/5 flex items-center justify-between text-xs relative z-10">
-                    <div className="flex flex-col min-w-0">
-                        <span className="font-bold text-white truncate">{user.name}</span>
-                        <span className="text-[10px] text-white/40 truncate mt-0.5">{user.email}</span>
+                <div className="px-5 py-6">
+                    <p className="mono-meta text-brand-lime">Workspace</p>
+                    <p className="mt-2 text-xs leading-5 text-white/45">A working view of projects, intake, and system health.</p>
+                </div>
+
+                <nav className="flex-1 px-3" aria-label="Workspace navigation">
+                    {navGroups.map((group) => <div key={group.label} className="mb-6 last:mb-0"><p className="px-3 pb-2 font-mono text-[0.62rem] uppercase tracking-[0.12em] text-white/30">{group.label}</p><div className="space-y-1">{group.items.map((item) => {
+                        const Icon = item.icon;
+                        const active = activeTab === item.id;
+                        return <Link key={item.id} href={item.href} onClick={closeSidebar} className={`flex items-center gap-3 border-l-2 px-3 py-3 text-sm transition-colors ${active ? 'border-brand-lime bg-white/7 text-white' : 'border-transparent text-white/52 hover:bg-white/5 hover:text-white'}`} aria-current={active ? 'page' : undefined}><Icon size={18} weight={active ? 'fill' : 'regular'} className={active ? 'text-brand-lime' : 'text-white/45'} /><span>{item.label}</span></Link>;
+                    })}</div></div>)}
+                </nav>
+
+                <div className="border-t border-white/15 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-white">{auth?.user?.name || 'System operator'}</p>
+                            <p className="mt-1 truncate font-mono text-[0.62rem] text-white/40">{auth?.user?.email || 'operator@systemify.id'}</p>
+                        </div>
+                        <Link href={route('logout')} method="post" as="button" className="border border-white/15 p-2 text-white/45 hover:border-red-300/50 hover:text-red-300" title={locale === 'en' ? 'Log out' : 'Keluar'}><SignOut size={16} weight="bold" /></Link>
                     </div>
-                    <Link
-                        href={route('logout')}
-                        method="post"
-                        as="button"
-                        className="p-2 rounded-lg hover:bg-red-500/10 text-white/40 hover:text-red-400 transition-colors shrink-0"
-                        title="Log Out"
-                    >
-                        <SignOut className="w-4 h-4" weight="bold" />
-                    </Link>
                 </div>
             </aside>
 
-            {/* Mobile Sidebar Overlay */}
-            {sidebarOpen && (
-                <div 
-                    onClick={() => setSidebarOpen(false)}
-                    className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm xl:hidden"
-                />
-            )}
+            {sidebarOpen && <button type="button" className="fixed inset-0 z-40 bg-brand-dark/75 lg:hidden" onClick={closeSidebar} aria-label="Close workspace navigation overlay" />}
 
-            {/* MAIN CONTENT AREA */}
-            <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
-                
-                {/* Topbar Navigation Header */}
-                <header className="h-16 border-b border-white/5 px-6 flex items-center justify-between shrink-0 relative z-30 bg-brand-dark/20 backdrop-blur-md">
-                    <div className="flex items-center gap-4">
-                        {/* Mobile Hamburger toggle */}
-                        <button 
-                            onClick={() => setSidebarOpen(true)}
-                            className="xl:hidden p-2 rounded-xl border border-white/10 hover:bg-white/5 text-white"
-                        >
-                            <List className="w-5 h-5" weight="bold" />
-                        </button>
-
-                    </div>
-
-                    {/* Right utilities */}
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={toggleLocale}
-                            className="px-2.5 py-1 rounded-full border border-white/10 hover:bg-white/5 text-[10px] font-black uppercase tracking-widest text-brand-lime hover:text-brand-lime/80 transition-colors"
-                            title={locale === 'en' ? 'Switch to Indonesian' : 'Ganti ke Bahasa Inggris'}
-                        >
-                            {locale === 'en' ? 'EN' : 'ID'}
-                        </button>
-                        <Link 
-                            href="/"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 hover:bg-white/5 text-[10px] font-black uppercase tracking-widest text-white/70 hover:text-white transition-colors"
-                        >
-                            <House className="w-3.5 h-3.5" weight="bold" /> {t('common.view_site')}
-                        </Link>
+            <div className="min-h-screen lg:pl-[17rem]">
+                <header className="sticky top-0 z-30 border-b border-white/15 bg-brand-dark">
+                    <div className="flex min-h-[4.75rem] items-center justify-between gap-4 px-5 sm:px-8">
+                        <div className="flex items-center gap-3">
+                            <button type="button" className="border border-white/20 p-2 text-white/70 hover:text-white lg:hidden" onClick={() => setSidebarOpen(true)} aria-label="Open workspace navigation"><List size={18} weight="bold" /></button>
+                            <span className="hidden font-mono text-[0.64rem] uppercase tracking-[0.12em] text-white/35 sm:inline">Systemify / Workspace</span>
+                            <span className="font-mono text-[0.64rem] uppercase tracking-[0.12em] text-brand-lime sm:hidden">SYS / {activeTab}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <span className="hidden items-center gap-2 font-mono text-[0.64rem] uppercase tracking-[0.08em] text-white/50 md:flex"><span className="status-dot status-dot--operational" /> operational</span>
+                            <button type="button" onClick={toggleLocale} className="border-l border-white/20 pl-3 font-mono text-[0.64rem] uppercase tracking-[0.1em] text-brand-lime" aria-label="Switch language">{locale === 'en' ? 'ID' : 'EN'}</button>
+                            <Link href="/" className="hidden items-center gap-2 border border-white/20 px-3 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.06em] text-white/70 hover:border-white/50 hover:text-white sm:inline-flex"><Globe size={15} /> {locale === 'en' ? 'View site' : 'Lihat site'}</Link>
+                        </div>
                     </div>
                 </header>
 
-                {/* Content Shell wrapper */}
-                <main className="flex-1 p-6 relative z-10">
-                    <div className="max-w-7xl mx-auto flex flex-col gap-6">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex flex-col gap-1">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-brand-lime">Console Root</span>
-                                <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white">{title}</h1>
+                <main className="px-5 py-8 sm:px-8 sm:py-10">
+                    <div className="mx-auto max-w-[92rem]">
+                        <div className="mb-9 flex flex-col gap-4 border-b border-white/15 pb-7 sm:flex-row sm:items-end sm:justify-between">
+                            <div>
+                                <p className="mono-meta text-brand-lime">{activeTab === 'overview' ? '01 / System overview' : `Workspace / ${activeTab}`}</p>
+                                <h1 className="mt-3 text-3xl font-semibold tracking-[-0.045em] text-white sm:text-4xl">{title}</h1>
                             </div>
+                            <p className="max-w-xs text-xs leading-5 text-white/45">{locale === 'en' ? 'Prioritise what changed, what is blocked, and what needs a decision.' : 'Prioritaskan perubahan, hal yang terblokir, dan keputusan yang dibutuhkan.'}</p>
                         </div>
                         {children}
                     </div>

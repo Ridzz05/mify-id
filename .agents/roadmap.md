@@ -7,7 +7,7 @@ Proyek ini adalah aplikasi **Monolith Modern**.
 - **Backend:** Laravel (PHP 8.3+), menggunakan SQLite sebagai database bawaan.
 - **Frontend:** React 19 dengan Vite 8.
 - **Penghubung (Bridge):** Inertia.js (menyambungkan routing Laravel langsung ke page React tanpa API terpisah).
-- **Styling & UI:** Tailwind CSS v4, dipadukan dengan **shadcn/ui** (menggunakan style `new-york` dan icon `lucide-react`).
+  - **Styling & UI:** Tailwind CSS v4 with a small semantic Systemify primitive layer and Phosphor icons.
 - **Lokasi Kode Penting:**
   - `routes/web.php` -> Mengatur endpoint dan render page frontend.
   - `resources/js/Pages/` -> Berisi halaman-halaman utama (View) React.
@@ -15,10 +15,10 @@ Proyek ini adalah aplikasi **Monolith Modern**.
   - `app/Http/Controllers/` -> Logika bisnis backend.
 
 ## 📅 Rencana Pengerjaan Berikutnya (To-Do List)
-*   **Halaman Admin & System Dashboard:**
-    *   Mendesain ulang halaman pasca-login (`Dashboard.jsx`) untuk diubah menjadi sistem Dashboard Admin terpadu.
-    *   Menyesuaikan tema visual dashboard dengan gaya gelap premium (`brand-dark`, `brand-lime` accent, `brand-glow`) agar senada dengan halaman landing Welcome.
-    *   Memastikan navigasi dashboard dan layout otentikasi (`Login.jsx`, `Register.jsx`) mematuhi standar kegelapan, tipografi, dan interaksi kursor kustom global.
+*   **Evidence & operating data:**
+    *   Attach approved interface evidence to published system records.
+    *   Keep the public case-study fields complete before promoting a system.
+    *   Continue responsive and accessibility review at 360, 390, 768, 1024, and 1440px.
 
 ## 📝 Aturan Update Checkpoint
 Setiap agen yang menyelesaikan tugas terstruktur (membuat fitur baru, mengubah alur sistem, menambah dependensi, dll) **WAJIB** menambahkan log ke bagian bawah file ini.
@@ -26,6 +26,77 @@ Setiap agen yang menyelesaikan tugas terstruktur (membuat fitur baru, mengubah a
 ---
 
 ## 🚀 Changelog & Checkpoints
+
+### [08 Agustus 2026] - Landing Studio Controlled Configuration System
+- **Configuration foundation:** Added allowlisted landing defaults and normalization in `app/Support/LandingConfiguration.php` and `resources/js/Pages/Landing/config/*`; semantic values are stored instead of CSS classes, HTML, JavaScript, or arbitrary GSAP input.
+- **Shared renderer:** Refactored `Welcome.jsx` into the shared `LandingRenderer` used by both the public page and Site Studio preview; public pages read only `published_config`.
+- **Persistence:** Added `site_configurations` and `site_configuration_revisions` migrations, `SiteConfiguration` models, transactional draft/publish/restore actions, and the authenticated `/admin/site-studio` route family.
+- **Studio workflow:** Added `resources/js/Pages/SiteStudio/Index.jsx` with section navigator, exact renderer preview, 1440/1024/768/390/360 viewport presets, hero content/layout/shape/motion inspectors, draft state, publish controls, and revision restore.
+- **Motion:** Added GSAP and `@gsap/react` with six allowlisted motion presets, scoped cleanup, controlled intensity/scroll behavior, and `prefers-reduced-motion` handling.
+- **Safety coverage:** Added `tests/Feature/SiteStudioTest.php` covering authentication, published-vs-draft isolation, allowlist normalization, transactional publication, revision creation, and draft restoration.
+- **Verification:** `npm run build` passes with Vite 8; `php artisan test` passes with 31 tests / 103 assertions; Site Studio migrations are applied; `admin/site-studio` routes are registered; public/login/unauthenticated Studio runtime smoke checks return 200/200/302; `npm audit --omit=dev` reports 0 vulnerabilities; `git diff --check` passes.
+- **Files changed:** `.agents/LANDING_STUDIO.md`, `.agents/roadmap.md`, `package.json`, `package-lock.json`, `routes/web.php`, `app/Support/LandingConfiguration.php`, `app/Models/SiteConfiguration.php`, `app/Models/SiteConfigurationRevision.php`, `app/Http/Controllers/SiteStudioController.php`, both Site Studio migrations, `resources/js/Pages/Welcome.jsx`, `resources/js/Pages/Landing/*`, `resources/js/Pages/SiteStudio/Index.jsx`, `resources/js/Layouts/AdminLayout.jsx`, `resources/css/app.css`, and `tests/Feature/SiteStudioTest.php`.
+
+### [08 Agustus 2026] - Landing Studio Editor Re-audit & Completion
+- **Audit finding:** The initial section navigator exposed non-Hero sections as read-only placeholders; motion duration/delay existed in the schema but not in the inspector; and secondary-object position/visibility could diverge between duplicated config branches.
+- **Editor completion:** Added localized content + visibility inspectors for Disciplines, Selected Systems, Transformation, Process, Principles, and Project Intake. The preview and public renderer now consume those semantic section values, while evidence, process rows, principles, and intake field contracts remain source-owned.
+- **Control consistency:** Added duration and delay motion editors, mirrored secondary-object position/visibility from the Hero inspector, and disabled Publish until local changes have been saved as a draft.
+- **Navigation safety:** AppLayout filters landing anchors and falls back the intake CTA to the Hero when a configured section is hidden.
+- **Audit artifact:** Added `.agents/LANDING_STUDIO_AUDIT.md` with the editor-to-renderer/persistence matrix and evidence limits; `.agents/LANDING_STUDIO.md` now records the re-audited status.
+- **Verification:** `npm run build` passes; `php artisan test` passes with 31 tests / 108 assertions; section allowlisting, hidden-section state, mirrored hero state, draft privacy, revisions, and restore behavior are covered; `git diff --check` passes.
+
+### [08 Agustus 2026] - Systemify Redesign V2 Foundation, Evidence, Intake & Diagnostics
+- **Design source of truth:** Reconciled `.agents/DESIGN.md` with `.agents/REDESIGN_V2.md`; removed stale neon/glow/pill guidance and documented the operational editorial system.
+- **Shared foundation:** Refined `resources/css/app.css`, brand buttons/cards/badges/icon/input primitives, locale dictionaries, and public copy to use neutral surfaces, blue structure, lime emphasis, semantic status colors, contextual radii, focus states, and reduced-motion defaults.
+- **Evidence contract:** Added `system_code`, `problem`, `solution`, `result`, and `image_alt` to portfolio records; removed stock-image fallback behavior; updated portfolio CRUD, seeding, admin evidence entry, and public selected systems to show honest evidence states.
+- **Operational intake:** Added `current_workflow`, `operational_constraint`, `desired_change`, and `timeline` to briefs; stopped generating synthetic budgets and stacks; preserved message-only submissions and routes; added regression coverage for both payload shapes.
+- **Workspace structure:** Grouped admin navigation into Operations, Systems, and Diagnostics; moved runtime checks to a dedicated `Runtime diagnostics` page; kept the main dashboard focused on operating state, active work, intake, evidence, and activity.
+- **Verification:** `npm run build` passes with Vite 8; `php artisan test` passes with 27 tests / 74 assertions; both V2 migrations applied successfully; `php artisan route:list --path=dashboard` confirms the diagnostics route; `git diff --check` passes.
+- **Files changed:** `.agents/DESIGN.md`, `.agents/UI_AUDIT.md`, `.agents/roadmap.md`, `resources/css/app.css`, `resources/js/Components/Brand/*`, `resources/js/Layouts/AdminLayout.jsx`, `resources/js/Pages/Welcome.jsx`, `resources/js/Pages/Briefs/Index.jsx`, `resources/js/Pages/Portfolios/Index.jsx`, `resources/js/Pages/Dashboard.jsx`, `resources/js/Pages/Diagnostics/Index.jsx`, `app/Http/Controllers/BriefController.php`, `app/Http/Controllers/PortfolioController.php`, `app/Models/Brief.php`, `app/Models/Portfolio.php`, `routes/web.php`, both V2 migrations, `database/seeders/PortfolioSeeder.php`, and `tests/Feature/ExampleTest.php`.
+
+### [08 Agustus 2026] - Systemify Redesign V2 Phase 0 UI Audit
+- **Scope:** Audited the current public site, authentication shell, authenticated workspace, shared primitives, copy, responsive behavior, and UI data seams against `.agents/REDESIGN_V2.md` without starting another redesign pass.
+- **Audit artifact:** Created `.agents/UI_AUDIT.md` with evidence-backed `KEEP`, `REFINE`, `REMOVE`, and `REBUILD` decisions, requirement matrix, risks, evidence limits, and the recommended phase order.
+- **Key findings:** The V1 foundation already satisfies the V2 positioning, public information sequence, operational editorial restraint, semantic status treatment, and main workspace hierarchy. The next structural work is the evidence data contract, real selected-system records, operational intake fields, workspace IA/diagnostics boundary, and removal of stale legacy copy/primitives.
+- **Visual evidence:** Fresh Chromium captures were inspected at 360, 390, 768, 1024, and 1440px for the public homepage; 360 and 1440px for auth; 360, 1024, and 1440px for the dashboard; and 360px spot checks for briefs, pipelines, portfolios, and live preview. A transient blank 390px capture was rejected and recaptured before acceptance.
+- **Functional preservation:** No routes, controllers, schema, or working UI flows were changed in this audit pass. Existing backend seams were explicitly marked for preservation before Phase 1.
+- **Files changed:** `.agents/UI_AUDIT.md`, `.agents/roadmap.md`.
+
+### [07 Agustus 2026] - Systemify Redesign Phase 0 Audit
+- **Audit findings:**
+  1. Public UI is built around a dark neon marketing shell with fixed glass navigation, glow/noise layers, custom cursor behavior, scroll snapping, and repeated rounded cards.
+  2. `Welcome.jsx` currently leads with stack-led hero copy and decorative Instagram-style card interactions; capabilities, portfolio, methodology, and contact are presented as repeated card/grid sections.
+  3. `AdminLayout.jsx` and `Dashboard.jsx` share the same expressive dark marketing treatment, while the dashboard hierarchy gives prominent space to infrastructure trivia and vanity KPIs instead of active projects, unresolved work, recent activity, and system health.
+  4. Brand primitives (`brand-card`, `brand-panel`, `BrandButton`, `BrandBadge`, and `BrandSelect`) encode the old visual language: large radius, translucent surfaces, glow effects, pills, and motion-first interactions.
+  5. Backend routes, Inertia data flow, brief intake, pipeline actions, portfolio CRUD, authentication, and live preview are working seams to preserve during the visual migration.
+- **Phase 0 decision:** Keep the Laravel/Inertia architecture and existing business routes. Replace the shared visual foundation, public shell/homepage narrative, and admin workspace hierarchy in focused phases. Remove decorative motion, cursor, scroll snap, and non-semantic status color usage as part of the migration.
+- **Files inspected:** `.agents/REDESIGN_GOALS.md`, `.agents/DESIGN.md`, `resources/css/app.css`, `resources/js/Layouts/*.jsx`, `resources/js/Pages/Welcome.jsx`, `resources/js/Pages/Dashboard.jsx`, `resources/js/Pages/Briefs/Index.jsx`, `resources/js/Pages/Pipelines/Index.jsx`, `resources/js/Pages/Portfolios/Index.jsx`, `resources/js/Pages/LivePreview/Index.jsx`, `resources/js/Components/Brand/*.jsx`, `routes/web.php`, and the primary Eloquent models/controllers.
+
+### [07 Agustus 2026] - Systemify Operational Editorial Foundation & Public Site
+- **Apa yang dilakukan:**
+  1. Replaced the neon/glass design foundation with off-white, ink, blue, lime, semantic status, editorial rule, focus, form, and button tokens in `resources/css/app.css`.
+  2. Removed custom cursor, scroll-snap, glow, noise, and decoration-first behavior from `AppLayout.jsx`; added a responsive, non-glass public shell with navigation, language toggle, project CTA, and structured footer.
+  3. Rebuilt `Welcome.jsx` around the new information architecture: position, BUILD/AUTOMATE/OPERATE capability matrix, selected system evidence, before/after operational transformations, technical process timeline, principles, and project intake.
+  4. Flattened shared brand primitives in `BrandButton.jsx`, `BrandBadge.jsx`, `BrandCard.jsx`, and `ApplicationLogo.jsx` so future authenticated screens inherit the new language without a dependency change.
+- **Verification:** `npm run build` passes with Vite 8.
+- **Files changed:** `resources/css/app.css`, `resources/js/Layouts/AppLayout.jsx`, `resources/js/Pages/Welcome.jsx`, `resources/js/Components/Brand/BrandButton.jsx`, `resources/js/Components/Brand/BrandBadge.jsx`, `resources/js/Components/Brand/BrandCard.jsx`, `resources/js/Components/ApplicationLogo.jsx`, `.agents/roadmap.md`.
+
+### [07 Agustus 2026] - Systemify Workspace Migration
+- **Apa yang dilakukan:**
+  1. Replaced the authenticated navigation with a dense workspace shell in `AdminLayout.jsx`: explicit current location, operational status, project-oriented navigation, responsive drawer behavior, and a compact operator footer.
+  2. Rebuilt `Dashboard.jsx` around active projects, unresolved client intake, recent activity, quick actions, and system health; removed framework/database trivia from the primary hierarchy.
+  3. Migrated `Briefs/Index.jsx`, `Pipelines/Index.jsx`, `Portfolios/Index.jsx`, and `LivePreview/Index.jsx` from card/glow-heavy screens to data-first lists, tables, detail panes, and utility controls while preserving their existing Inertia CRUD routes.
+  4. Simplified `GuestLayout.jsx`, `AuthenticatedLayout.jsx`, `BrandConfirmModal.jsx`, `BrandSelect.jsx`, and shared auth buttons so login/profile flows use the same calm Systemify identity.
+  5. Updated locale storage and blueprint fallback copy to use the Systemify name and removed the remaining decorative motion implementation from active React components.
+- **Verification:** `npm run build`, `php artisan test` (25 tests / 61 assertions), and `git diff --check` pass.
+- **Files changed:** `resources/js/Layouts/AdminLayout.jsx`, `resources/js/Layouts/AuthenticatedLayout.jsx`, `resources/js/Layouts/GuestLayout.jsx`, `resources/js/Pages/Dashboard.jsx`, `resources/js/Pages/Briefs/Index.jsx`, `resources/js/Pages/Pipelines/Index.jsx`, `resources/js/Pages/Portfolios/Index.jsx`, `resources/js/Pages/LivePreview/Index.jsx`, `resources/js/Components/Brand/BrandConfirmModal.jsx`, `resources/js/Components/Brand/BrandSelect.jsx`, `resources/js/Components/PrimaryButton.jsx`, `resources/js/Components/SecondaryButton.jsx`, `resources/js/Contexts/LanguageContext.jsx`, `app/Http/Controllers/BriefController.php`, `.agents/roadmap.md`.
+
+### [07 Agustus 2026] - Redesign Verification Checkpoint
+- **Verification:** `npm run build` passes with Vite 8, `php artisan test` passes with 25 tests and 61 assertions, `php artisan route:list` confirms the public intake, dashboard, briefs, pipelines, portfolios, live preview, and auth routes, and `git diff --check` reports no whitespace errors.
+- **Responsive source audit:** The public before/after rows now explicitly allow long labels to wrap at narrow widths; public and workspace layouts collapse grids, drawers, forms, and data tables at the documented breakpoints, with horizontal overflow reserved for intentionally wide tables/device previews.
+- **Runtime smoke test:** With elevated local server access, `/` returned 200, `/login` returned 200, and `/dashboard` redirected unauthenticated visitors to `/login`.
+- **Visual QA:** Chromium captured and reviewed the public homepage at 360, 390, 768, 1024, and 1440px, plus the auth shell at 360 and 1440px. The authenticated dashboard was reviewed at 360, 1024, and 1440px; briefs, pipelines, portfolios, and live preview received authenticated 360px spot checks. The mobile dashboard project table was replaced with a stacked project list after visual review exposed horizontal data overload. The reviewed layouts hold without accidental horizontal overflow; intentional overflow remains limited to filter rows and the live device preview.
+- **Session safety:** Authenticated browser QA used the seeded local session cookie directly; no credential-bearing test page or committed QA artifact was created.
 
 ### [23 Juli 2026] - Pembersihan & Penghapusan Total AI Floating Chat FAB
 - **Apa yang dilakukan:**

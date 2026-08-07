@@ -7,8 +7,13 @@ use Inertia\Inertia;
 
 Route::get('/', function () {
     $portfolios = [];
+    $landingConfig = \App\Support\LandingConfiguration::defaults();
     if (\Illuminate\Support\Facades\Schema::hasTable('portfolios')) {
         $portfolios = \App\Models\Portfolio::where('is_featured', true)->orderBy('order', 'asc')->latest()->get();
+    }
+    if (\Illuminate\Support\Facades\Schema::hasTable('site_configurations')) {
+        $configuration = \App\Models\SiteConfiguration::where('name', 'Primary landing')->first();
+        $landingConfig = \App\Support\LandingConfiguration::normalize($configuration?->published_config);
     }
 
     return Inertia::render('Welcome', [
@@ -17,36 +22,16 @@ Route::get('/', function () {
         'laravelVersion' => Application::VERSION,
         'phpVersion' => PHP_VERSION,
         'portfolios' => $portfolios,
+        'landingConfig' => $landingConfig,
     ]);
 });
 
 Route::get('/dashboard', function () {
-    $dbPath = database_path('database.sqlite');
-    $dbSize = file_exists($dbPath) ? round(filesize($dbPath) / 1024) . ' KB' : 'N/A';
-
-    // Health check for Open Design Daemon (port 7456)
-    $odSocket = @fsockopen('127.0.0.1', 7456, $errno, $errstr, 0.2);
-    $openDesignStatus = $odSocket ? 'active' : 'offline';
-    if ($odSocket) fclose($odSocket);
-
-    // Health check for Vite Dev Server (port 5173)
-    $viteSocket = @fsockopen('127.0.0.1', 5173, $errno, $errstr, 0.2);
-    $viteStatus = $viteSocket ? 'active' : 'offline';
-    if ($viteSocket) fclose($viteSocket);
-
-    // Get latest git commit using native php shell_exec
-    $gitCommit = trim(@shell_exec('git log -1 --pretty=format:"%h - %s (%ar)"') ?? 'N/A');
-
     return Inertia::render('Dashboard', [
         'briefs' => \App\Models\Brief::latest()->get(),
         'pipelines' => \Illuminate\Support\Facades\Schema::hasTable('pipelines') ? \App\Models\Pipeline::latest()->get() : [],
         'portfolios' => \Illuminate\Support\Facades\Schema::hasTable('portfolios') ? \App\Models\Portfolio::latest()->get() : [],
-        'dbSize' => $dbSize,
-        'adminCount' => \App\Models\User::count(),
         'auditLogs' => \App\Models\AuditLog::latest()->take(5)->get(),
-        'openDesignStatus' => $openDesignStatus,
-        'viteStatus' => $viteStatus,
-        'gitCommit' => $gitCommit,
     ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 Route::post('/briefs', [\App\Http\Controllers\BriefController::class, 'store'])->name('briefs.store');
@@ -84,6 +69,30 @@ Route::middleware('auth')->group(function () {
             'totalPipelines' => \App\Models\Pipeline::count(),
         ]);
     })->name('live-preview.index');
+
+    Route::get('/dashboard/diagnostics', function () {
+        $dbPath = database_path('database.sqlite');
+        $odSocket = @fsockopen('127.0.0.1', 7456, $odErrno, $odErrstr, 0.2);
+        $viteSocket = @fsockopen('127.0.0.1', 5173, $viteErrno, $viteErrstr, 0.2);
+        $openDesignStatus = $odSocket ? 'active' : 'offline';
+        $viteStatus = $viteSocket ? 'active' : 'offline';
+
+        if ($odSocket) fclose($odSocket);
+        if ($viteSocket) fclose($viteSocket);
+
+        return Inertia::render('Diagnostics/Index', [
+            'openDesignStatus' => $openDesignStatus,
+            'viteStatus' => $viteStatus,
+            'dbSize' => file_exists($dbPath) ? round(filesize($dbPath) / 1024) . ' KB' : 'N/A',
+            'gitCommit' => trim(@shell_exec('git log -1 --pretty=format:"%h - %s (%ar)"') ?? 'N/A'),
+        ]);
+    })->name('diagnostics.index');
+
+    // Controlled public landing configuration workspace
+    Route::get('/admin/site-studio', [\App\Http\Controllers\SiteStudioController::class, 'index'])->name('site-studio.index');
+    Route::patch('/admin/site-studio/draft', [\App\Http\Controllers\SiteStudioController::class, 'saveDraft'])->name('site-studio.save-draft');
+    Route::post('/admin/site-studio/publish', [\App\Http\Controllers\SiteStudioController::class, 'publish'])->name('site-studio.publish');
+    Route::post('/admin/site-studio/revisions/{revision}/restore', [\App\Http\Controllers\SiteStudioController::class, 'restoreRevision'])->name('site-studio.restore-revision');
 });
 
 require __DIR__.'/auth.php';

@@ -5,284 +5,354 @@
 @source '../js/**/*.jsx';
 
 @theme {
-    --font-sans: 'Outfit', 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
-    --font-serif: 'Playfair Display', 'Times New Roman', serif;
+    --font-sans: 'Outfit', 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-serif: 'Playfair Display', Georgia, serif;
+    --font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
 
     --color-brand-blue: #1e4ae9;
     --color-brand-lime: #b5ff00;
-    --color-brand-dark: #0f172a;
+    --color-brand-dark: #12161c;
+    --color-brand-ink: #0d1117;
+    --color-brand-paper: #f5f3ed;
+    --color-brand-paper-muted: #eae7de;
+    --color-brand-line: #d8d5cb;
+    --color-brand-line-dark: #30353c;
+    --color-status-attention: #f1bb3f;
+    --color-status-blocked: #d9534f;
 
-    --radius-brand-card: 1.5rem; /* 24px */
+    --radius-brand-marker: 0.25rem;
+    --radius-brand-control: 0.5rem;
+    --radius-brand-surface: 0.75rem;
+}
 
-    --animate-scan: scan 2s ease-in-out infinite;
+:root {
+    color-scheme: light;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+}
 
-    @keyframes scan {
-        0%, 100% {
-            top: 0%;
-        }
-        50% {
-            top: 100%;
-        }
+* {
+    border-color: var(--color-brand-line);
+}
+
+html {
+    scroll-behavior: smooth;
+    background: var(--color-brand-paper);
+}
+
+body {
+    min-width: 320px;
+    margin: 0;
+    background: var(--color-brand-paper);
+    color: var(--color-brand-dark);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+}
+
+button,
+a {
+    -webkit-tap-highlight-color: transparent;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+:focus-visible {
+    outline: 2px solid var(--color-brand-blue);
+    outline-offset: 3px;
+}
+
+::selection {
+    background: var(--color-brand-lime);
+    color: var(--color-brand-dark);
+}
+
+/* Shared layout vocabulary */
+.site-container {
+    width: min(100% - 3rem, 90rem);
+    margin-inline: auto;
+}
+
+@media (max-width: 640px) {
+    .site-container {
+        width: min(100% - 2rem, 90rem);
     }
 }
 
-/* ==========================================
-   UNIFIED BRAND SYSTEM CLASSES
-   ========================================== */
-
-/* Base Section wrapper to ensure 100% background and rhythm consistency */
-.brand-section {
-    position: relative;
-    padding-top: 5rem;
-    padding-bottom: 5rem;
-    z-index: 10;
-    overflow: hidden;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+.eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: var(--color-brand-blue);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    line-height: 1.2;
+    text-transform: uppercase;
 }
 
-@media (min-width: 768px) {
-    .brand-section {
-        padding-top: 8rem;
-        padding-bottom: 8rem;
-    }
+.eyebrow::before {
+    width: 1.75rem;
+    height: 1px;
+    background: currentColor;
+    content: '';
 }
 
-/* Transparency variations */
-.brand-section-transparent {
-    background-color: transparent;
+.eyebrow--light {
+    color: var(--color-brand-lime);
 }
 
-.brand-section-subtle {
-    background-color: rgba(255, 255, 255, 0.015);
+.hero-highlight {
+    display: inline;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    background: var(--color-brand-lime);
+    color: var(--color-brand-dark);
+    padding-inline: 0.08em;
 }
 
-/* Bespoke tech-blueprint icon box to replace standard circle slop */
-.brand-icon-box {
-    position: relative;
+.hero-highlight--compact {
+    padding-inline: 0.08em;
+}
+
+.hero-highlight--balanced {
+    padding-inline: 0.16em;
+}
+
+.hero-highlight--wide {
+    padding-inline: 0.28em;
+}
+
+.hero-highlight--offset {
+    box-shadow: 0 0.16em 0 var(--color-brand-blue);
+}
+
+.hero-underline {
+    text-decoration: underline;
+    text-decoration-color: var(--color-brand-lime);
+    text-decoration-thickness: 0.16em;
+    text-underline-offset: 0.08em;
+    text-decoration-skip-ink: none;
+}
+
+.hero-signal-line {
+    border-bottom: 0.18em solid var(--color-brand-lime);
+    padding-bottom: 0.04em;
+}
+
+.shape-sharp {
+    border-radius: 0;
+}
+
+.shape-soft {
+    border-radius: var(--radius-brand-surface);
+}
+
+.shape-half-rounded {
+    border-radius: var(--radius-brand-surface);
+    border-top-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.shape-full-rounded {
+    border-radius: 999px;
+}
+
+.landing-renderer {
+    overflow-x: clip;
+}
+
+.editorial-rule {
+    height: 1px;
+    background: currentColor;
+    opacity: 0.2;
+}
+
+.mono-meta {
+    color: currentColor;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.04em;
+}
+
+.status-dot {
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    flex: 0 0 auto;
+    border-radius: 999px;
+}
+
+.status-dot--operational {
+    background: var(--color-brand-lime);
+}
+
+.status-dot--attention {
+    background: var(--color-status-attention);
+}
+
+.status-dot--blocked {
+    background: var(--color-status-blocked);
+}
+
+.site-input {
+    width: 100%;
+    border: 1px solid var(--color-brand-line);
+    border-radius: var(--radius-brand-marker);
+    background: #fbfaf6;
+    color: var(--color-brand-dark);
+    padding: 0.85rem 0.9rem;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    outline: none;
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.site-input::placeholder {
+    color: #8a8880;
+}
+
+.site-input:focus {
+    border-color: var(--color-brand-blue);
+    box-shadow: 0 0 0 3px rgb(30 74 233 / 0.12);
+}
+
+.site-input--dark {
+    border-color: rgb(255 255 255 / 0.2);
+    background: rgb(255 255 255 / 0.06);
+    color: white;
+}
+
+.site-input--dark::placeholder {
+    color: rgb(255 255 255 / 0.38);
+}
+
+.site-input--dark:focus {
+    border-color: var(--color-brand-lime);
+    box-shadow: 0 0 0 3px rgb(181 255 0 / 0.12);
+}
+
+.site-input[aria-invalid='true'] {
+    border-color: var(--color-status-blocked);
+}
+
+.button-primary,
+.button-secondary,
+.button-ink {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 3.25rem;
-    height: 3.25rem;
-    border-radius: 12px;
-    border: 1px dashed rgba(255, 255, 255, 0.15);
-    background-color: rgba(255, 255, 255, 0.03);
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    gap: 0.55rem;
+    min-height: 2.75rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-brand-marker);
+    padding: 0.75rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    text-transform: uppercase;
+    transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
 }
 
-/* Indicator status light inside the icon box representing 'system active' */
-.brand-icon-box::before {
-    content: '';
-    position: absolute;
-    top: -2px;
-    right: -2px;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background-color: var(--color-brand-lime);
-    box-shadow: 0 0 8px var(--color-brand-lime);
-    opacity: 0.8;
+.button-primary {
+    background: var(--color-brand-lime);
+    color: var(--color-brand-dark);
 }
 
-.brand-icon-box-blue::before {
-    background-color: var(--color-brand-blue);
-    box-shadow: 0 0 8px var(--color-brand-blue);
+.button-primary:hover {
+    background: #c7ff40;
+    transform: translateY(-1px);
 }
 
-/* Hover effects */
-.brand-icon-box:hover {
-    border-style: solid;
-    border-color: rgba(255, 255, 255, 0.3);
-    background-color: rgba(255, 255, 255, 0.06);
-    transform: translateY(-2px);
+.button-secondary {
+    border-color: currentColor;
+    background: transparent;
 }
 
-/* Hardware-accelerated glow container to prevent scroll lag on heavy blur filters */
-.brand-glow {
-    position: absolute;
-    border-radius: 9999px;
-    pointer-events: none;
-    z-index: 0;
-    transform: translate3d(0, 0, 0);
-    backface-visibility: hidden;
-    will-change: transform, filter;
+.button-secondary:hover {
+    background: rgb(30 74 233 / 0.08);
+    color: var(--color-brand-blue);
 }
 
+.button-ink {
+    background: var(--color-brand-dark);
+    color: white;
+}
 
+.button-ink:hover {
+    background: var(--color-brand-blue);
+    transform: translateY(-1px);
+}
 
-/* Unified Card Component */
-.brand-card {
-    background-color: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: var(--radius-brand-card);
-    padding: 2rem;
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+.button-primary:disabled,
+.button-secondary:disabled,
+.button-ink:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+    transform: none;
+}
+
+/* Shared primitives for the authenticated product. Surfaces are containers for
+   meaningful records, not a decoration-first card system. */
+.brand-section {
+    position: relative;
+    border-bottom: 1px solid rgb(18 22 28 / 0.12);
+    padding-block: 6rem;
+}
+
+.brand-section-transparent,
+.brand-section-subtle {
+    background: transparent;
+}
+
+.brand-surface {
     position: relative;
     overflow: hidden;
+    border: 1px solid rgb(255 255 255 / 0.14);
+    border-radius: var(--radius-brand-surface);
+    background: rgb(255 255 255 / 0.04);
+    padding: 1.5rem;
 }
 
-.brand-card:hover {
-    background-color: rgba(255, 255, 255, 0.08);
+.brand-surface:hover {
+    background: rgb(255 255 255 / 0.07);
 }
 
-/* Unified Lime Accent Card Component */
-.brand-card-accent {
-    background-color: rgba(181, 255, 0, 0.04);
-    border: 1px solid rgba(181, 255, 0, 0.15);
-    border-radius: var(--radius-brand-card);
-    padding: 2rem;
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    position: relative;
-    overflow: hidden;
-}
-
-.brand-card-accent:hover {
-    background-color: rgba(181, 255, 0, 0.08);
-    border-color: rgba(181, 255, 0, 0.35);
-}
-
-/* Unified Panel Component (Forms & Customizers) */
-.brand-panel {
-    background-color: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: var(--radius-brand-card);
-    padding: 2rem;
-    position: relative;
-    overflow: hidden;
-}
-
-@media (min-width: 768px) {
-    .brand-panel {
-        padding: 2.5rem;
-    }
-}
-
-/* Unified Form Controls */
 .brand-input {
     width: 100%;
-    background-color: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 0.75rem; /* 12px */
-    padding: 0.75rem 1rem;
-    font-size: 0.875rem; /* 14px */
-    color: #ffffff;
+    border: 1px solid rgb(255 255 255 / 0.18);
+    border-radius: var(--radius-brand-marker);
+    background: rgb(255 255 255 / 0.05);
+    color: white;
+    padding: 0.75rem 0.9rem;
+    font-size: 0.875rem;
     outline: none;
-    transition: all 0.2s ease;
+    transition: border-color 160ms ease, background-color 160ms ease;
 }
 
 .brand-input:focus {
-    border-color: rgba(181, 255, 0, 0.5);
-    background-color: rgba(255, 255, 255, 0.08);
+    border-color: var(--color-brand-lime);
+    background: rgb(255 255 255 / 0.08);
 }
 
-/* Unified Preview Box */
-.brand-preview-box {
-    position: relative;
-    border-radius: var(--radius-brand-card);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    background-color: rgba(255, 255, 255, 0.01);
-}
-
-/* Card Shuffling Animations (Poker Deck Style) */
-.shuffle-card {
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translate3d(-50%, 0, 0);
-    width: 100%;
-    max-width: 360px;
-    height: 450px;
-    transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.3s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s;
-}
-
-/* Card positions when BLUE is active (top) */
-.card-blue-active .card-blue {
-    z-index: 25;
-    transform: translate3d(-50%, 0, 0) rotate(-4deg);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
-    opacity: 1;
-}
-
-.card-blue-active .card-lime {
-    z-index: 15;
-    transform: translate3d(calc(-50% + 24px), 16px, -50px) rotate(4deg) scale(0.95);
-    opacity: 0.75;
-    box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.3);
-}
-
-/* Card positions when LIME is active (top) */
-.card-lime-active .card-lime {
-    z-index: 25;
-    transform: translate3d(-50%, 0, 0) rotate(4deg);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
-    opacity: 1;
-}
-
-.card-lime-active .card-blue {
-    z-index: 15;
-    transform: translate3d(calc(-50% - 24px), 16px, -50px) rotate(-4deg) scale(0.95);
-    opacity: 0.75;
-    box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.3);
-}
-
-/* Shuffling slide out animations */
-.card-blue-active .card-blue.shuffling-out {
-    transform: translate3d(-140%, -20px, 0) rotate(-18deg) scale(1.02);
-    opacity: 0.5;
-    z-index: 30;
-}
-
-.card-lime-active .card-lime.shuffling-out {
-    transform: translate3d(140%, -20px, 0) rotate(18deg) scale(1.02);
-    opacity: 0.5;
-    z-index: 30;
-}
-
-/* Custom Cursor Hiding for Desktop (Screen size width >= 768px) when custom cursor class is active */
-@media (min-width: 768px) {
-    html.has-custom-cursor, 
-    html.has-custom-cursor body, 
-    html.has-custom-cursor a, 
-    html.has-custom-cursor button, 
-    html.has-custom-cursor input, 
-    html.has-custom-cursor select, 
-    html.has-custom-cursor textarea, 
-    html.has-custom-cursor [role="button"], 
-    html.has-custom-cursor .cursor-pointer {
-        cursor: none !important;
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
     }
-}
-
-/* Native CSS Scroll Snap System (Only on desktop screens >= 1024px) */
-.scroll-container {
-    height: 100vh;
-    overflow-y: auto;
-    overflow-x: hidden;
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch; /* smooth momentum scroll on iOS */
-}
-
-.snap-section {
-    position: relative;
-}
-
-@media (min-width: 1024px) {
-    .scroll-container {
-        scroll-snap-type: y mandatory;
-    }
-    .snap-section {
-        scroll-snap-align: start;
-        scroll-snap-stop: always;
-        min-height: 100vh;
-    }
-    /* Ensure the footer snaps nicely at the end */
-    footer {
-        scroll-snap-align: end;
-    }
-}
-
-/* Force global font stack across all elements (including form inputs & buttons) */
-html, body, button, input, select, textarea {
-    font-family: 'Outfit', 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
 }
