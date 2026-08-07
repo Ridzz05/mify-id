@@ -36,7 +36,7 @@ class SiteStudioController extends Controller
                     'published_at' => $revision->published_at,
                     'publisher' => $revision->publisher?->only(['name', 'email']),
                 ]),
-            'portfolios' => Portfolio::where('is_featured', true)->orderBy('order')->latest()->take(3)->get(),
+            'portfolios' => Portfolio::orderBy('order')->latest()->get(),
         ]);
     }
 

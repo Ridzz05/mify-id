@@ -27,6 +27,15 @@ Setiap agen yang menyelesaikan tugas terstruktur (membuat fitur baru, mengubah a
 
 ## 🚀 Changelog & Checkpoints
 
+### [08 Agustus 2026] - Landing Studio V2 Full-Page Editability
+- **Gap closed:** Replaced the previous Hero-first/heading-only Studio with a V2 normalized contract covering global shell copy, hero panels/meta/targets, discipline groups and items, systems selection/presentation, transformation rows, process steps, principles, intake field copy/success states, and semantic visibility/shape/motion controls.
+- **Ownership:** Public business copy is now Site Studio-owned; portfolio evidence remains domain-owned; form field names, section anchors, responsive CSS, and renderer/motion implementation remain immutable system UI.
+- **Compatibility:** JS/PHP normalizers migrate V1 and old revisions, strip markup, enforce enum/boolean/string/array bounds, deduplicate repeater IDs, preserve explicit empty arrays, and reject unapproved CTA targets.
+- **Renderer/editor:** `Welcome.jsx` and `AppLayout.jsx` read normalized config; `SiteStudio/Index.jsx` uses contextual Content/Structure/Layout/Appearance/Motion inspectors; `SiteStudio/Repeater.jsx` provides accessible add/delete/reorder controls; public and preview share `LandingRenderer`.
+- **Persistence:** Public root and Studio receive domain portfolios for config-controlled featured/selected presentation. Draft, publish, complete revision snapshots, and draft-only restore remain transactional and authenticated.
+- **Verification:** `php artisan test --filter=SiteStudioTest` passes with 7 tests / 65 assertions; `npm run build`, PHP syntax checks, and `git diff --check` pass. Browser screenshots were not available in this context.
+- **Files changed:** `app/Support/LandingConfiguration.php`, `resources/js/Pages/Landing/config/*`, `resources/js/Pages/Welcome.jsx`, `resources/js/Layouts/AppLayout.jsx`, `resources/js/Pages/SiteStudio/Index.jsx`, `resources/js/Pages/SiteStudio/Repeater.jsx`, `routes/web.php`, `app/Http/Controllers/SiteStudioController.php`, `tests/Feature/SiteStudioTest.php`, `.agents/LANDING_STUDIO*.md`, `.agents/roadmap.md`.
+
 ### [08 Agustus 2026] - Landing Studio Controlled Configuration System
 - **Configuration foundation:** Added allowlisted landing defaults and normalization in `app/Support/LandingConfiguration.php` and `resources/js/Pages/Landing/config/*`; semantic values are stored instead of CSS classes, HTML, JavaScript, or arbitrary GSAP input.
 - **Shared renderer:** Refactored `Welcome.jsx` into the shared `LandingRenderer` used by both the public page and Site Studio preview; public pages read only `published_config`.

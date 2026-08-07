@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Brief;
+use App\Models\SiteConfiguration;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -62,5 +63,23 @@ class ExampleTest extends TestCase
         $this->assertNull($brief->budget);
         $this->assertSame('We need a Laravel and React dashboard for order tracking.', $brief->message);
         $this->assertSame(['Laravel', 'React'], $brief->tech_stack);
+    }
+
+    public function test_published_intake_required_flags_drive_submission_validation(): void
+    {
+        $configuration = SiteConfiguration::primary();
+        $published = $configuration->published_config;
+        foreach (['company', 'current_workflow', 'operational_constraint', 'desired_change', 'budget', 'timeline'] as $key) {
+            $published['sections']['intake']['fields'][$key]['required'] = false;
+        }
+        $configuration->update(['published_config' => $published]);
+
+        $response = $this->from('/')->post(route('briefs.store'), [
+            'name' => 'Optional Intake',
+            'email' => 'optional@example.test',
+        ]);
+
+        $response->assertRedirect('/');
+        $this->assertDatabaseHas('briefs', ['email' => 'optional@example.test']);
     }
 }

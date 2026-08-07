@@ -1,110 +1,118 @@
 import { useMemo, useState } from 'react';
 import { Head, router } from '@inertiajs/react';
-import { ArrowClockwise, ClockCounterClockwise, Eye, FloppyDisk, PaintBrush, RocketLaunch, SlidersHorizontal } from '@phosphor-icons/react';
+import { ArrowClockwise, ClockCounterClockwise, Eye, FloppyDisk, PaintBrush, RocketLaunch, SlidersHorizontal, Rows } from '@phosphor-icons/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { LandingRenderer } from '@/Pages/Landing/LandingRenderer';
-import { landingSections } from '@/Pages/Landing/config/defaults';
+import { globalStudioSections, landingSections } from '@/Pages/Landing/config/defaults';
 import { motionDelayOptions, motionDurationOptions, motionIntensityOptions, motionPresets, motionScrollOptions } from '@/Pages/Landing/config/motionPresets';
 import { normalizeLandingConfig } from '@/Pages/Landing/config/schema';
 import { shapeOptions, shapeTokens } from '@/Pages/Landing/config/shapeTokens';
+import Repeater from './Repeater';
 
 const viewportOptions = [1440, 1024, 768, 390, 360];
 const inspectorTabs = [
     { id: 'content', label: 'Content', icon: Eye },
+    { id: 'structure', label: 'Structure', icon: Rows },
     { id: 'layout', label: 'Layout', icon: SlidersHorizontal },
-    { id: 'shape', label: 'Shape', icon: PaintBrush },
+    { id: 'appearance', label: 'Appearance', icon: PaintBrush },
     { id: 'motion', label: 'Motion', icon: ArrowClockwise },
 ];
+const sectionLabels = Object.fromEntries(landingSections.map((section) => [section.id, section.label]));
 
-const sectionEditorFields = {
-    disciplines: [
-        { key: 'eyebrow', label: 'Eyebrow' },
-        { key: 'title', label: 'Title', multiline: true },
-        { key: 'intro', label: 'Intro', multiline: true },
-    ],
-    systems: [
-        { key: 'eyebrow', label: 'Eyebrow' },
-        { key: 'title', label: 'Title', multiline: true },
-        { key: 'intro', label: 'Intro', multiline: true },
-    ],
-    transformation: [
-        { key: 'eyebrow', label: 'Eyebrow' },
-        { key: 'title', label: 'Title', multiline: true },
-    ],
-    process: [
-        { key: 'eyebrow', label: 'Eyebrow' },
-        { key: 'title', label: 'Title', multiline: true },
-    ],
-    principles: [
-        { key: 'eyebrow', label: 'Eyebrow' },
-        { key: 'title', label: 'Title', multiline: true },
-    ],
-    intake: [
-        { key: 'eyebrow', label: 'Eyebrow' },
-        { key: 'title', label: 'Title', multiline: true },
-        { key: 'intro', label: 'Intro', multiline: true },
-    ],
-};
-
-const dateLabel = (value) => value ? new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)) : 'Not published';
+const localized = (en = '', id = en) => ({ en, id });
+const newItemId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+const fieldId = (prefix, key) => `studio-${prefix}-${key}`.replace(/[^a-z0-9-]/gi, '-');
 
 function OptionGroup({ label, value, options, onChange }) {
-    return (
-        <fieldset className="border-t border-white/10 pt-4">
-            <legend className="font-mono text-[0.62rem] uppercase tracking-[0.1em] text-white/40">{label}</legend>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-                {options.map((option) => <button key={option.value} type="button" onClick={() => onChange(option.value)} className={`border px-3 py-2 text-left text-xs transition-colors ${value === option.value ? 'border-brand-lime bg-brand-lime/10 text-brand-lime' : 'border-white/15 text-white/55 hover:border-white/35 hover:text-white'}`} aria-pressed={value === option.value}>{option.label}</button>)}
-            </div>
-        </fieldset>
-    );
+    return <fieldset className="border-t border-white/10 pt-4"><legend className="font-mono text-[0.62rem] uppercase tracking-[0.1em] text-white/40">{label}</legend><div className="mt-3 grid grid-cols-2 gap-2">{options.map((option) => <button key={option.value} type="button" onClick={() => onChange(option.value)} className={`border px-3 py-2 text-left text-xs transition-colors ${value === option.value ? 'border-brand-lime bg-brand-lime/10 text-brand-lime' : 'border-white/15 text-white/55 hover:border-white/35 hover:text-white'}`} aria-pressed={value === option.value}>{option.label}</button>)}</div></fieldset>;
 }
 
-function TextField({ label, value, onChange, multiline = false, hint }) {
-    const id = `studio-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+function TextField({ label, value = '', onChange, multiline = false, hint, id, type = 'text' }) {
+    const inputId = id || fieldId('field', label);
     const Field = multiline ? 'textarea' : 'input';
-    return (
-        <label htmlFor={id} className="block text-sm font-semibold text-white/80">
-            {label}
-            {hint && <span className="ml-2 text-[0.65rem] font-normal text-white/35">{hint}</span>}
-            <Field id={id} value={value} onChange={(event) => onChange(event.target.value)} className={`brand-input mt-2 ${multiline ? 'min-h-28 resize-y' : ''}`} />
-        </label>
-    );
+    return <label htmlFor={inputId} className="block text-sm font-semibold text-white/80">{label}{hint && <span className="ml-2 text-[0.65rem] font-normal text-white/35">{hint}</span>}<Field id={inputId} type={multiline ? undefined : type} value={value ?? ''} onChange={(event) => onChange(event.target.value)} className={`brand-input mt-2 ${multiline ? 'min-h-24 resize-y' : ''}`} /></label>;
+}
+
+function LocalizedFields({ value, locale, setLocale, prefix, fields, onChange }) {
+    return <div className="space-y-4"><div className="flex items-center justify-between border-b border-white/10 pb-3"><p className="font-mono text-[0.62rem] uppercase tracking-[0.1em] text-white/40">Localized copy</p><div className="flex border border-white/15 p-0.5"><button type="button" onClick={() => setLocale('en')} className={`px-2 py-1 font-mono text-[0.6rem] ${locale === 'en' ? 'bg-brand-lime text-brand-dark' : 'text-white/45'}`}>EN</button><button type="button" onClick={() => setLocale('id')} className={`px-2 py-1 font-mono text-[0.6rem] ${locale === 'id' ? 'bg-brand-lime text-brand-dark' : 'text-white/45'}`}>ID</button></div></div>{fields.map(({ key, label, multiline, hint }) => <TextField key={key} id={fieldId(prefix, `${locale}-${key}`)} label={label} value={value?.[locale]?.[key]} onChange={(next) => onChange(key, next)} multiline={multiline} hint={hint} />)}</div>;
+}
+
+function Toggle({ label, checked, onChange, hint }) {
+    return <label className="flex items-center justify-between gap-3 border border-white/10 bg-white/[0.03] px-3 py-3 text-xs text-white/75"><span><span className="block font-semibold text-white">{label}</span>{hint && <span className="mt-1 block text-[0.68rem] text-white/40">{hint}</span>}</span><input type="checkbox" checked={Boolean(checked)} onChange={(event) => onChange(event.target.checked)} className="h-4 w-4 border-white/20 bg-white/5 text-brand-lime focus:ring-brand-lime" /></label>;
 }
 
 function ShapePreview({ shape, active, onClick }) {
-    return (
-        <button type="button" onClick={onClick} className={`border p-2 text-left ${active ? 'border-brand-lime' : 'border-white/15 hover:border-white/35'}`} aria-pressed={active}>
-            <span className={`block h-12 bg-brand-lime ${shapeTokens[shape].className}`} />
-            <span className={`mt-2 block text-[0.65rem] uppercase tracking-[0.06em] ${active ? 'text-brand-lime' : 'text-white/55'}`}>{shapeTokens[shape].label}</span>
-        </button>
-    );
+    return <button type="button" onClick={onClick} className={`border p-2 text-left ${active ? 'border-brand-lime' : 'border-white/15 hover:border-white/35'}`} aria-pressed={active}><span className={`block h-12 bg-brand-lime ${shapeTokens[shape].className}`} /><span className={`mt-2 block text-[0.65rem] uppercase tracking-[0.06em] ${active ? 'text-brand-lime' : 'text-white/55'}`}>{shapeTokens[shape].label}</span></button>;
 }
 
-function SectionInspector({ sectionId, locale, setLocale, sectionConfig, onVisibilityChange, onContentChange }) {
-    const fields = sectionEditorFields[sectionId] || [];
-    const sectionLabel = landingSections.find((section) => section.id === sectionId)?.label || sectionId;
-    const sourceNote = sectionId === 'systems'
-        ? 'Evidence rows are sourced from published portfolio records.'
-        : sectionId === 'intake'
-            ? 'Form fields and validation remain part of the production intake flow.'
-            : 'Lists and process rows remain governed by the production renderer.';
+function SectionHeader({ label, title, locale, setLocale }) {
+    return <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-4"><div><p className="mono-meta text-brand-lime">{label} inspector</p><h2 className="mt-2 text-lg font-semibold text-white">{title}</h2></div><div className="flex border border-white/15 p-0.5"><button type="button" onClick={() => setLocale('en')} className={`px-2 py-1 font-mono text-[0.6rem] ${locale === 'en' ? 'bg-brand-lime text-brand-dark' : 'text-white/45'}`}>EN</button><button type="button" onClick={() => setLocale('id')} className={`px-2 py-1 font-mono text-[0.6rem] ${locale === 'id' ? 'bg-brand-lime text-brand-dark' : 'text-white/45'}`}>ID</button></div></div>;
+}
 
-    return (
-        <>
-            <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-4">
-                <div><p className="mono-meta text-brand-lime">{sectionLabel} inspector</p><h2 className="mt-2 text-lg font-semibold text-white">Section content</h2></div>
-                <div className="flex border border-white/15 p-0.5"><button type="button" onClick={() => setLocale('en')} className={`px-2 py-1 font-mono text-[0.6rem] ${locale === 'en' ? 'bg-brand-lime text-brand-dark' : 'text-white/45'}`}>EN</button><button type="button" onClick={() => setLocale('id')} className={`px-2 py-1 font-mono text-[0.6rem] ${locale === 'id' ? 'bg-brand-lime text-brand-dark' : 'text-white/45'}`}>ID</button></div>
-            </div>
-            <div className="mt-5 space-y-5">
-                <label className="flex items-center justify-between gap-3 border border-white/10 bg-white/[0.03] px-3 py-3 text-xs text-white/75">
-                    <span><span className="block font-semibold text-white">Show section</span><span className="mt-1 block text-[0.68rem] text-white/40">Hide it from the public renderer without deleting its content.</span></span>
-                    <input type="checkbox" checked={sectionConfig.visible} onChange={(event) => onVisibilityChange(event.target.checked)} className="h-4 w-4 border-white/20 bg-white/5 text-brand-lime focus:ring-brand-lime" />
-                </label>
-                {fields.map((field) => <TextField key={field.key} label={field.label} value={sectionConfig.content[locale][field.key]} onChange={(value) => onContentChange(field.key, value)} multiline={field.multiline} />)}
-                <p className="border-t border-white/10 pt-4 text-xs leading-5 text-white/40">{sourceNote}</p>
-            </div>
-        </>
-    );
+function RepeaterLocalizedItem({ item, locale, prefix, onChange }) {
+    return <TextField id={fieldId(prefix, `${item.id}-${locale}`)} label="Item" value={item.text?.[locale]} onChange={(value) => onChange({ ...item, text: { ...item.text, [locale]: value } })} />;
+}
+
+function HeroInspector({ draft, locale, setLocale, activeTab, setDraft, updateHero, updateContent, updateVisibility, setMotionKey }) {
+    const content = draft.hero.content[locale];
+    const panelKey = { 'system-status': 'operatingModel', 'operating-model': 'operatingModel', workflow: 'workflow', 'active-project': 'activeProject' }[draft.hero.secondaryObject.type] || 'operatingModel';
+    const panel = draft.hero[panelKey];
+    const updatePanel = (key, value) => setDraft((current) => ({ ...current, hero: { ...current.hero, [panelKey]: { ...current.hero[panelKey], content: { ...current.hero[panelKey].content, [locale]: { ...current.hero[panelKey].content[locale], [key]: value } } } } }));
+    const updatePanelRow = (index, value) => setDraft((current) => ({ ...current, hero: { ...current.hero, [panelKey]: { ...current.hero[panelKey], rows: current.hero[panelKey].rows.map((row, rowIndex) => rowIndex === index ? value : row) } } }));
+    const updatePanelRows = (rows) => setDraft((current) => ({ ...current, hero: { ...current.hero, [panelKey]: { ...current.hero[panelKey], rows } } }));
+    const panelContent = panel.content[locale];
+
+    return <>
+        {activeTab === 'content' && <div className="mt-5 space-y-5"><TextField id={`hero-${locale}-eyebrow`} label="Eyebrow" value={content.eyebrow} onChange={(value) => updateContent('eyebrow', value)} /><TextField id={`hero-${locale}-headline`} label="Headline" value={content.headline} onChange={(value) => updateContent('headline', value)} multiline /><TextField id={`hero-${locale}-description`} label="Supporting copy" value={content.description} onChange={(value) => updateContent('description', value)} multiline /><TextField id={`hero-${locale}-primary-cta`} label="Primary CTA" value={content.primaryCta} onChange={(value) => updateContent('primaryCta', value)} /><TextField id={`hero-${locale}-primary-target`} label="Primary target" value={content.primaryTarget} onChange={(value) => updateContent('primaryTarget', value)} hint="Anchor or approved route" /><TextField id={`hero-${locale}-secondary-cta`} label="Secondary CTA" value={content.secondaryCta} onChange={(value) => updateContent('secondaryCta', value)} /><TextField id={`hero-${locale}-secondary-target`} label="Secondary target" value={content.secondaryTarget} onChange={(value) => updateContent('secondaryTarget', value)} hint="Anchor or approved route" /></div>}
+        {activeTab === 'structure' && <div className="mt-5 space-y-6"><div><p className="font-mono text-[0.62rem] uppercase tracking-[0.1em] text-white/40">Hero meta items</p><div className="mt-3"><Repeater items={draft.hero.metaItems} addLabel="Add meta item" emptyLabel="No hero meta items." onAdd={() => setDraft((current) => ({ ...current, hero: { ...current.hero, metaItems: [...current.hero.metaItems, { id: newItemId('hero-meta'), text: localized('New meta item', 'Meta baru') }] } }))} onRemove={(index) => setDraft((current) => ({ ...current, hero: { ...current.hero, metaItems: current.hero.metaItems.filter((_, itemIndex) => itemIndex !== index) } }))} onMove={(index, direction) => setDraft((current) => ({ ...current, hero: { ...current.hero, metaItems: moveItem(current.hero.metaItems, index, direction) } }))} renderItem={(item) => <RepeaterLocalizedItem item={item} locale={locale} prefix="hero-meta" onChange={(next) => setDraft((current) => ({ ...current, hero: { ...current.hero, metaItems: current.hero.metaItems.map((currentItem) => currentItem.id === item.id ? next : currentItem) } }))} />} /></div></div><OptionGroup label="Secondary object" value={draft.hero.secondaryObject.type} options={['none', 'system-status', 'operating-model', 'workflow', 'active-project'].map((value) => ({ value, label: value }))} onChange={(value) => updateHero('secondaryObject', 'type', value)} /><div className="border-t border-white/10 pt-4"><p className="font-mono text-[0.62rem] uppercase tracking-[0.1em] text-white/40">{panelKey} panel copy</p><div className="mt-3 space-y-4"><TextField id={`panel-${panelKey}-${locale}-eyebrow`} label="Eyebrow" value={panelContent.eyebrow} onChange={(value) => updatePanel('eyebrow', value)} /><TextField id={`panel-${panelKey}-${locale}-description`} label="Description" value={panelContent.description} onChange={(value) => updatePanel('description', value)} multiline /><TextField id={`panel-${panelKey}-${locale}-status-label`} label="Status label" value={panelContent.statusLabel} onChange={(value) => updatePanel('statusLabel', value)} /><TextField id={`panel-${panelKey}-${locale}-footer`} label="Footer label" value={panelContent.footerLabel} onChange={(value) => updatePanel('footerLabel', value)} />{panelContent.outcomeStatement !== undefined && <TextField id={`panel-${panelKey}-${locale}-outcome`} label="Outcome statement" value={panelContent.outcomeStatement} onChange={(value) => updatePanel('outcomeStatement', value)} multiline />}</div><div className="mt-4"><OptionGroup label="Panel status" value={panel.status || 'operational'} options={['operational', 'attention', 'offline'].map((value) => ({ value, label: value }))} onChange={(value) => setDraft((current) => ({ ...current, hero: { ...current.hero, [panelKey]: { ...current.hero[panelKey], status: value } } }))} /></div><div className="mt-4"><p className="font-mono text-[0.62rem] uppercase tracking-[0.1em] text-white/40">Panel rows</p><div className="mt-3"><Repeater items={panel.rows} addLabel="Add panel row" emptyLabel="No panel rows." onAdd={() => updatePanelRows([...panel.rows, { id: newItemId(`hero-${panelKey}`), label: localized('New label', 'Label baru'), value: localized('New value', 'Nilai baru'), status: 'operational' }])} onRemove={(index) => updatePanelRows(panel.rows.filter((_, itemIndex) => itemIndex !== index))} onMove={(index, direction) => updatePanelRows(moveItem(panel.rows, index, direction))} renderItem={(row, index) => <div className="space-y-3"><TextField id={`panel-${panelKey}-${row.id}-${locale}-label`} label="Label" value={row.label[locale]} onChange={(value) => updatePanelRow(index, { ...row, label: { ...row.label, [locale]: value } })} /><TextField id={`panel-${panelKey}-${row.id}-${locale}-value`} label="Value" value={row.value[locale]} onChange={(value) => updatePanelRow(index, { ...row, value: { ...row.value, [locale]: value } })} /><OptionGroup label="Status" value={row.status} options={['operational', 'attention', 'offline'].map((value) => ({ value, label: value }))} onChange={(value) => updatePanelRow(index, { ...row, status: value })} /></div>} /></div></div></div></div>}
+        {activeTab === 'layout' && <div className="mt-5 space-y-5"><OptionGroup label="Horizontal alignment" value={draft.hero.layout.alignment} options={['left', 'center', 'right'].map((value) => ({ value, label: value }))} onChange={(value) => updateHero('layout', 'alignment', value)} /><OptionGroup label="Vertical alignment" value={draft.hero.layout.verticalAlignment} options={['start', 'center', 'end'].map((value) => ({ value, label: value }))} onChange={(value) => updateHero('layout', 'verticalAlignment', value)} /><OptionGroup label="Content width" value={draft.hero.layout.contentWidth} options={['compact', 'wide', 'full'].map((value) => ({ value, label: value }))} onChange={(value) => updateHero('layout', 'contentWidth', value)} /><OptionGroup label="Hero height" value={draft.hero.layout.height} options={['auto', 'tall', 'full'].map((value) => ({ value, label: value }))} onChange={(value) => updateHero('layout', 'height', value)} /><OptionGroup label="Secondary position" value={draft.hero.layout.secondaryObjectPosition} options={['left', 'center', 'right'].map((value) => ({ value, label: value }))} onChange={(value) => setDraft((current) => ({ ...current, hero: { ...current.hero, layout: { ...current.hero.layout, secondaryObjectPosition: value }, secondaryObject: { ...current.hero.secondaryObject, position: value === 'center' ? 'top' : value } } }))} /><fieldset className="border-t border-white/10 pt-4"><legend className="font-mono text-[0.62rem] uppercase tracking-[0.1em] text-white/40">Visibility</legend><div className="mt-3 space-y-2">{['desktop', 'tablet', 'mobile'].map((device) => <label key={device} className="flex items-center justify-between gap-3 text-xs text-white/65"><span className="capitalize">{device}</span><input type="checkbox" checked={draft.hero.layout.visibility[device]} onChange={(event) => updateVisibility(device, event.target.checked)} className="h-4 w-4 border-white/20 bg-white/5 text-brand-lime focus:ring-brand-lime" /></label>)}</div></fieldset></div>}
+        {activeTab === 'appearance' && <div className="mt-5 space-y-6"><div><p className="font-mono text-[0.62rem] uppercase tracking-[0.1em] text-white/40">Surface preset</p><div className="mt-3 grid grid-cols-2 gap-2">{shapeOptions.map(({ value }) => <ShapePreview key={value} shape={value} active={draft.cards.shape === value} onClick={() => setDraft((current) => ({ ...current, cards: { ...current.cards, shape: value } }))} />)}</div></div><div className="border-t border-white/10 pt-4"><OptionGroup label="Highlight style" value={draft.hero.highlight.style} options={['none', 'marker', 'underline', 'offset-block', 'signal-line'].map((value) => ({ value, label: value }))} onChange={(value) => updateHero('highlight', 'style', value)} /><TextField id={`highlight-${locale}`} label="Highlighted phrase" value={locale === 'en' ? draft.hero.highlight.text : draft.hero.highlight.textId} onChange={(value) => updateHero('highlight', locale === 'en' ? 'text' : 'textId', value)} /><OptionGroup label="Highlight width" value={draft.hero.highlight.width} options={['compact', 'balanced', 'wide'].map((value) => ({ value, label: value }))} onChange={(value) => updateHero('highlight', 'width', value)} /><OptionGroup label="Highlight shape" value={draft.hero.highlight.shape} options={shapeOptions} onChange={(value) => updateHero('highlight', 'shape', value)} /></div></div>}
+        {activeTab === 'motion' && <MotionInspector draft={draft} updateHero={updateHero} setMotionKey={setMotionKey} />}
+    </>;
+}
+
+function MotionInspector({ draft, updateHero, setMotionKey }) {
+    return <div className="mt-5 space-y-5"><div><p className="font-mono text-[0.62rem] uppercase tracking-[0.1em] text-white/40">Preset</p><div className="mt-3 space-y-2">{motionPresets.map((preset) => <button key={preset.value} type="button" onClick={() => updateHero('motion', 'preset', preset.value)} className={`w-full border p-3 text-left ${draft.hero.motion.preset === preset.value ? 'border-brand-lime bg-brand-lime/10' : 'border-white/15 hover:border-white/35'}`} aria-pressed={draft.hero.motion.preset === preset.value}><span className="block text-xs font-semibold text-white">{preset.label}</span><span className="mt-1 block text-[0.68rem] leading-5 text-white/45">{preset.description}</span></button>)}</div></div><OptionGroup label="Intensity" value={draft.hero.motion.intensity} options={motionIntensityOptions} onChange={(value) => updateHero('motion', 'intensity', value)} /><OptionGroup label="Scroll behavior" value={draft.hero.motion.scrollBehavior} options={motionScrollOptions} onChange={(value) => updateHero('motion', 'scrollBehavior', value)} /><OptionGroup label="Duration preset" value={draft.hero.motion.duration} options={motionDurationOptions} onChange={(value) => updateHero('motion', 'duration', value)} /><OptionGroup label="Delay preset" value={draft.hero.motion.delay} options={motionDelayOptions} onChange={(value) => updateHero('motion', 'delay', value)} /><button type="button" onClick={setMotionKey} className="button-secondary w-full py-2 text-xs text-white"><ArrowClockwise size={15} /> Replay motion</button><p className="text-xs leading-5 text-white/40">Motion is semantic and reduced-motion safe.</p></div>;
+}
+
+function SectionContentInspector({ sectionId, section, locale, setLocale, updateContent, updateVisibility }) {
+    const fields = sectionId === 'intake' ? [{ key: 'eyebrow', label: 'Eyebrow' }, { key: 'title', label: 'Title', multiline: true }, { key: 'intro', label: 'Intro', multiline: true }] : [{ key: 'eyebrow', label: 'Eyebrow' }, { key: 'title', label: 'Title', multiline: true }, { key: 'intro', label: 'Intro', multiline: true }];
+    return <div className="mt-5 space-y-5"><Toggle label="Show section" checked={section.visible} onChange={updateVisibility} hint="Hide without deleting its configured content." /><LocalizedFields value={section.content} locale={locale} setLocale={setLocale} prefix={sectionId} fields={fields} onChange={(key, value) => updateContent(sectionId, key, value)} /></div>;
+}
+
+function StructureInspector({ sectionId, section, locale, setLocale, updateArray }) {
+    if (sectionId === 'disciplines') return <div className="mt-5"><Repeater items={section.groups} addLabel="Add discipline group" emptyLabel="No discipline groups." onAdd={() => updateArray('groups', [...section.groups, { id: newItemId('discipline'), label: localized('NEW GROUP'), description: localized('Describe this discipline.', 'Jelaskan disiplin ini.'), icon: 'globe', items: [] }])} onRemove={(index) => updateArray('groups', section.groups.filter((_, itemIndex) => itemIndex !== index))} onMove={(index, direction) => updateArray('groups', moveItem(section.groups, index, direction))} renderItem={(group, groupIndex) => <div className="space-y-4"><LocalizedFields value={{ en: { label: group.label.en, description: group.description.en }, id: { label: group.label.id, description: group.description.id } }} locale={locale} setLocale={setLocale} prefix={group.id} fields={[{ key: 'label', label: 'Label' }, { key: 'description', label: 'Description', multiline: true }]} onChange={(key, value) => updateArray('groups', section.groups.map((item, index) => index === groupIndex ? { ...item, [key]: { ...item[key], [locale]: value } } : item))} /><OptionGroup label="Icon" value={group.icon} options={['globe', 'lightning', 'wrench'].map((value) => ({ value, label: value }))} onChange={(value) => updateArray('groups', section.groups.map((item, index) => index === groupIndex ? { ...item, icon: value } : item))} /><div className="border-t border-white/10 pt-4"><p className="font-mono text-[0.62rem] uppercase tracking-[0.1em] text-white/40">Items</p><div className="mt-3"><Repeater items={group.items} addLabel="Add discipline item" emptyLabel="No items in this group." onAdd={() => updateArray('groups', section.groups.map((item, index) => index === groupIndex ? { ...item, items: [...item.items, { id: newItemId(`${group.id}-item`), text: localized('New item', 'Item baru') }] } : item))} onRemove={(index) => updateArray('groups', section.groups.map((item, itemIndex) => itemIndex === groupIndex ? { ...item, items: item.items.filter((_, childIndex) => childIndex !== index) } : item))} onMove={(index, direction) => updateArray('groups', section.groups.map((item, itemIndex) => itemIndex === groupIndex ? { ...item, items: moveItem(item.items, index, direction) } : item))} renderItem={(item, index) => <RepeaterLocalizedItem item={item} locale={locale} prefix={group.id} onChange={(next) => updateArray('groups', section.groups.map((itemGroup, itemIndex) => itemIndex === groupIndex ? { ...itemGroup, items: itemGroup.items.map((child, childIndex) => childIndex === index ? next : child) } : itemGroup))} />} /></div></div></div>} /></div>;
+    if (sectionId === 'transformation') return <div className="mt-5"><Repeater items={section.rows} addLabel="Add transformation" emptyLabel="No transformation rows." onAdd={() => updateArray('rows', [...section.rows, { id: newItemId('transformation'), before: localized('Before', 'Sebelum'), after: localized('After', 'Sesudah') }])} onRemove={(index) => updateArray('rows', section.rows.filter((_, itemIndex) => itemIndex !== index))} onMove={(index, direction) => updateArray('rows', moveItem(section.rows, index, direction))} renderItem={(row, index) => <div className="space-y-3"><TextField id={`${row.id}-before-${locale}`} label="Before" value={row.before[locale]} onChange={(value) => updateArray('rows', section.rows.map((item, itemIndex) => itemIndex === index ? { ...item, before: { ...item.before, [locale]: value } } : item))} /><TextField id={`${row.id}-after-${locale}`} label="After" value={row.after[locale]} onChange={(value) => updateArray('rows', section.rows.map((item, itemIndex) => itemIndex === index ? { ...item, after: { ...item.after, [locale]: value } } : item))} /></div>} /></div>;
+    if (sectionId === 'process') return <div className="mt-5"><Repeater items={section.steps} addLabel="Add process step" emptyLabel="No process steps." onAdd={() => updateArray('steps', [...section.steps, { id: newItemId('process'), number: String(section.steps.length + 1).padStart(2, '0'), label: localized('New step', 'Langkah baru'), description: localized('Describe this step.', 'Jelaskan langkah ini.') }])} onRemove={(index) => updateArray('steps', section.steps.filter((_, itemIndex) => itemIndex !== index))} onMove={(index, direction) => updateArray('steps', moveItem(section.steps, index, direction))} renderItem={(step, index) => <div className="space-y-3"><TextField id={`${step.id}-number`} label="Number" value={step.number} onChange={(value) => updateArray('steps', section.steps.map((item, itemIndex) => itemIndex === index ? { ...item, number: value } : item))} /><TextField id={`${step.id}-label-${locale}`} label="Label" value={step.label[locale]} onChange={(value) => updateArray('steps', section.steps.map((item, itemIndex) => itemIndex === index ? { ...item, label: { ...item.label, [locale]: value } } : item))} /><TextField id={`${step.id}-description-${locale}`} label="Description" value={step.description[locale]} onChange={(value) => updateArray('steps', section.steps.map((item, itemIndex) => itemIndex === index ? { ...item, description: { ...item.description, [locale]: value } } : item))} multiline /></div>} /></div>;
+    if (sectionId === 'principles') return <div className="mt-5"><Repeater items={section.items} addLabel="Add principle" emptyLabel="No principles." onAdd={() => updateArray('items', [...section.items, { id: newItemId('principle'), text: localized('New principle', 'Prinsip baru') }])} onRemove={(index) => updateArray('items', section.items.filter((_, itemIndex) => itemIndex !== index))} onMove={(index, direction) => updateArray('items', moveItem(section.items, index, direction))} renderItem={(item, index) => <RepeaterLocalizedItem item={item} locale={locale} prefix="principle" onChange={(next) => updateArray('items', section.items.map((current, itemIndex) => itemIndex === index ? next : current))} />} /></div>;
+    return <div className="mt-5"><p className="text-xs leading-5 text-white/45">This section is domain-backed or configured in another inspector.</p></div>;
+}
+
+function SystemsInspector({ section, portfolios, updatePresentation }) {
+    const presentation = section.presentation;
+    const toggleKeys = ['showImage', 'showCategory', 'showDescription', 'showProblem', 'showSolution', 'showResult', 'showStack', 'showProjectLink'];
+    return <div className="mt-5 space-y-5"><OptionGroup label="Layout" value={presentation.layout} options={['evidence', 'compact', 'split'].map((value) => ({ value, label: value }))} onChange={(value) => updatePresentation('layout', value)} /><OptionGroup label="Selection mode" value={presentation.selectionMode} options={['featured', 'selected'].map((value) => ({ value, label: value }))} onChange={(value) => updatePresentation('selectionMode', value)} /><TextField id="systems-display-limit" label="Display limit" type="number" value={presentation.displayLimit} onChange={(value) => updatePresentation('displayLimit', Number(value))} hint="1–12" />{presentation.selectionMode === 'selected' && <fieldset className="border-t border-white/10 pt-4"><legend className="font-mono text-[0.62rem] uppercase tracking-[0.1em] text-white/40">Selected portfolio records</legend><div className="mt-3 space-y-2">{portfolios.map((portfolio) => <label key={portfolio.id} className="flex items-center gap-2 text-xs text-white/70"><input type="checkbox" checked={presentation.selectedIds.map(String).includes(String(portfolio.id))} onChange={(event) => updatePresentation('selectedIds', event.target.checked ? [...presentation.selectedIds, portfolio.id] : presentation.selectedIds.filter((id) => String(id) !== String(portfolio.id)))} className="h-4 w-4 text-brand-lime" />{portfolio.title}</label>)}</div></fieldset>}<div className="space-y-2 border-t border-white/10 pt-4">{toggleKeys.map((key) => <Toggle key={key} label={key.replace(/^show/, 'Show ').replace(/([A-Z])/g, ' $1')} checked={presentation[key]} onChange={(value) => updatePresentation(key, value)} />)}</div><div className="border-t border-white/10 pt-4"><p className="font-mono text-[0.62rem] uppercase tracking-[0.1em] text-white/40">Labels and empty states</p><div className="mt-3 space-y-4"><TextField id="systems-empty-en" label="Empty state" value={presentation.emptyState.en} onChange={(value) => updatePresentation('emptyState', { ...presentation.emptyState, en: value })} /><TextField id="systems-empty-id" label="Empty state / ID" value={presentation.emptyState.id} onChange={(value) => updatePresentation('emptyState', { ...presentation.emptyState, id: value })} /><TextField id="systems-missing-en" label="Missing value" value={presentation.missingValue.en} onChange={(value) => updatePresentation('missingValue', { ...presentation.missingValue, en: value })} /><TextField id="systems-missing-id" label="Missing value / ID" value={presentation.missingValue.id} onChange={(value) => updatePresentation('missingValue', { ...presentation.missingValue, id: value })} /></div></div></div>;
+}
+
+function IntakeInspector({ section, locale, updateIntake }) {
+    return <div className="mt-5 space-y-5"><div><p className="font-mono text-[0.62rem] uppercase tracking-[0.1em] text-white/40">Presentation copy</p><div className="mt-3 space-y-4">{Object.keys(section.presentation).map((key) => <TextField key={key} id={`intake-presentation-${key}-${locale}`} label={key} value={section.presentation[key][locale]} onChange={(value) => updateIntake('presentation', key, { ...section.presentation[key], [locale]: value })} />)}</div></div><div className="border-t border-white/10 pt-4"><p className="font-mono text-[0.62rem] uppercase tracking-[0.1em] text-white/40">Backend field copy</p><div className="mt-3 space-y-4">{Object.entries(section.fields).map(([key, field]) => <div key={key} className="border border-white/10 p-3"><p className="font-mono text-[0.6rem] uppercase text-brand-lime">{key}</p><div className="mt-3 space-y-3"><TextField id={`intake-${key}-label-${locale}`} label="Label" value={field.label[locale]} onChange={(value) => updateIntake('fields', key, { ...field, label: { ...field.label, [locale]: value } })} /><TextField id={`intake-${key}-placeholder-${locale}`} label="Placeholder" value={field.placeholder[locale]} onChange={(value) => updateIntake('fields', key, { ...field, placeholder: { ...field.placeholder, [locale]: value } })} multiline /><Toggle label="Required" checked={field.required} onChange={(value) => updateIntake('fields', key, { ...field, required: value })} /></div></div>)}</div></div><div className="border-t border-white/10 pt-4"><p className="font-mono text-[0.62rem] uppercase tracking-[0.1em] text-white/40">Success state</p><div className="mt-3 space-y-3">{Object.entries(section.success).map(([key, value]) => <TextField key={key} id={`intake-success-${key}-${locale}`} label={key} value={value[locale]} onChange={(next) => updateIntake('success', key, { ...value, [locale]: next })} multiline={key === 'description'} />)}</div></div></div>;
+}
+
+function GlobalInspector({ config, activeSection, locale, setLocale, updateGlobal }) {
+    const group = activeSection.split('.')[1];
+    const navigationKeys = ['capabilities', 'systems', 'process', 'intake', 'workspace', 'primaryCta', 'languageSwitch'];
+    const footerKeys = ['description', 'navigateLabel', 'contactLabel', 'startBrief'];
+    return <div className="mt-5 space-y-5"><div className="border-b border-white/10 pb-4"><p className="font-mono text-[0.62rem] uppercase tracking-[0.1em] text-white/40">Brand and metadata</p><div className="mt-3 space-y-4"><TextField id="global-brand-name" label="Brand name" value={config.global.brand.name} onChange={(value) => updateGlobal('brand', 'name', value)} /><TextField id="global-brand-mark" label="Brand mark" value={config.global.brand.mark} onChange={(value) => updateGlobal('brand', 'mark', value)} /><TextField id={`global-meta-title-${locale}`} label="Meta title" value={config.global.meta.title[locale]} onChange={(value) => updateGlobal('meta', 'title', { ...config.global.meta.title, [locale]: value })} /><TextField id={`global-meta-description-${locale}`} label="Meta description" value={config.global.meta.description[locale]} onChange={(value) => updateGlobal('meta', 'description', { ...config.global.meta.description, [locale]: value })} multiline /></div></div>{group === 'navigation' && <div className="space-y-4">{navigationKeys.map((key) => <TextField key={key} id={`global-navigation-${key}-${locale}`} label={key} value={config.global.navigation[key][locale]} onChange={(value) => updateGlobal('navigation', key, { ...config.global.navigation[key], [locale]: value })} />)}</div>}{group === 'footer' && <div className="space-y-4">{footerKeys.map((key) => <TextField key={key} id={`global-footer-${key}-${locale}`} label={key} value={config.global.footer[key][locale]} onChange={(value) => updateGlobal('footer', key, { ...config.global.footer[key], [locale]: value })} multiline={key === 'description'} />)}</div>}{group === 'contact' && <TextField id="global-contact-email" label="Contact email" value={config.global.contact.email} onChange={(value) => updateGlobal('contact', 'email', value)} />}</div>;
+}
+
+const moveItem = (items, index, direction) => { const target = index + direction; if (target < 0 || target >= items.length) return items; const copy = [...items]; [copy[index], copy[target]] = [copy[target], copy[index]]; return copy; };
+
+function Inspector({ activeSection, activeTab, setActiveTab, draft, locale, setLocale, updateHero, updateContent, updateVisibility, updateArray, updatePresentation, updateIntake, updateGlobal, portfolios, setDraft, setMotionKey }) {
+    const isGlobal = activeSection.startsWith('global.');
+    if (isGlobal) return <><SectionHeader label={activeSection.replace('global.', '')} title="Global landing controls" locale={locale} setLocale={setLocale} /><GlobalInspector config={draft} activeSection={activeSection} locale={locale} setLocale={setLocale} updateGlobal={updateGlobal} /></>;
+    if (activeSection === 'hero') return <><SectionHeader label="Hero" title="Controlled decisions" locale={locale} setLocale={setLocale} /><div className="mt-4 grid grid-cols-2 gap-1 border-b border-white/10 pb-4 sm:grid-cols-5">{inspectorTabs.map(({ id, label, icon: Icon }) => <button type="button" key={id} onClick={() => setActiveTab(id)} className={`flex items-center justify-center gap-1 px-2 py-2 text-[0.6rem] ${activeTab === id ? 'bg-brand-blue text-white' : 'text-white/45 hover:bg-white/5 hover:text-white'}`} aria-pressed={activeTab === id}><Icon size={13} />{label}</button>)}</div><HeroInspector draft={draft} locale={locale} setLocale={setLocale} activeTab={activeTab} setDraft={setDraft} updateHero={updateHero} updateContent={updateContent} updateVisibility={updateVisibility} setMotionKey={setMotionKey} /></>;
+    const section = draft.sections[activeSection];
+    return <><SectionHeader label={sectionLabels[activeSection] || activeSection} title="Section controls" locale={locale} setLocale={setLocale} /><div className="mt-4 grid grid-cols-2 gap-1 border-b border-white/10 pb-4 sm:grid-cols-5">{inspectorTabs.map(({ id, label, icon: Icon }) => <button type="button" key={id} onClick={() => setActiveTab(id)} className={`flex items-center justify-center gap-1 px-2 py-2 text-[0.6rem] ${activeTab === id ? 'bg-brand-blue text-white' : 'text-white/45 hover:bg-white/5 hover:text-white'}`} aria-pressed={activeTab === id}><Icon size={13} />{label}</button>)}</div>{activeTab === 'content' && <SectionContentInspector sectionId={activeSection} section={section} locale={locale} setLocale={setLocale} updateContent={updateContent} updateVisibility={(value) => updateVisibility(activeSection, value)} />}{activeTab === 'structure' && (activeSection === 'systems' ? <div className="mt-5"><p className="text-xs leading-5 text-white/45">Portfolio records are domain-owned. Use Appearance to control their selection and presentation.</p></div> : <StructureInspector sectionId={activeSection} section={section} locale={locale} setLocale={setLocale} updateArray={(key, value) => updateArray(activeSection, key, value)} />)}{activeTab === 'appearance' && (activeSection === 'systems' ? <SystemsInspector section={section} portfolios={portfolios} updatePresentation={updatePresentation} /> : <div className="mt-5 space-y-4"><Toggle label="Show section" checked={section.visible} onChange={(value) => updateVisibility(activeSection, value)} hint="Visibility is a structure decision and remains safe to change here." /><p className="text-xs leading-5 text-white/45">This section uses the shared renderer and the configured card surface.</p></div>)}{activeTab === 'layout' && <div className="mt-5"><p className="text-xs leading-5 text-white/45">Responsive layout remains semantic and shared across public and preview renderers.</p></div>}{activeTab === 'motion' && <div className="mt-5"><p className="text-xs leading-5 text-white/45">Motion is controlled by the Hero semantic preset and respects reduced-motion preferences.</p></div>}{activeSection === 'intake' && activeTab === 'structure' && <IntakeInspector section={section} locale={locale} updateIntake={(group, key, value) => updateIntake(group, key, value)} />}</>;
 }
 
 export default function SiteStudioIndex({ configuration, revisions = [], portfolios = [] }) {
@@ -117,124 +125,23 @@ export default function SiteStudioIndex({ configuration, revisions = [], portfol
     const [motionKey, setMotionKey] = useState(0);
     const [savedSnapshot, setSavedSnapshot] = useState(JSON.stringify(initialDraft));
     const [publishedSnapshot, setPublishedSnapshot] = useState(JSON.stringify(normalizeLandingConfig(configuration?.published_config || {})));
-
-    const content = draft.hero.content[locale];
     const isUnsaved = JSON.stringify(draft) !== savedSnapshot;
     const hasUnpublishedChanges = JSON.stringify(draft) !== publishedSnapshot;
     const viewportClass = useMemo(() => viewport >= 768 ? 'min-h-[780px]' : 'min-h-[720px]', [viewport]);
+    const updateHero = (group, key, value) => setDraft((current) => ({ ...current, hero: { ...current.hero, [group]: { ...current.hero[group], [key]: value } } }));
+    const updateContent = (sectionId, key, value) => setDraft((current) => { const target = sectionId === 'hero' ? current.hero.content : current.sections[sectionId].content; return sectionId === 'hero' ? { ...current, hero: { ...current.hero, content: { ...target, [locale]: { ...target[locale], [key]: value } } } } : { ...current, sections: { ...current.sections, [sectionId]: { ...current.sections[sectionId], content: { ...target, [locale]: { ...target[locale], [key]: value } } } } }; });
+    const updateVisibility = (sectionId, value) => sectionId === 'hero' ? null : setDraft((current) => ({ ...current, sections: { ...current.sections, [sectionId]: { ...current.sections[sectionId], visible: value } } }));
+    const updateArray = (sectionId, key, value) => setDraft((current) => ({ ...current, sections: { ...current.sections, [sectionId]: { ...current.sections[sectionId], [key]: value } } }));
+    const updatePresentation = (key, value) => setDraft((current) => ({ ...current, sections: { ...current.sections, systems: { ...current.sections.systems, presentation: { ...current.sections.systems.presentation, [key]: value } } } }));
+    const updateIntake = (group, key, value) => setDraft((current) => ({ ...current, sections: { ...current.sections, intake: { ...current.sections.intake, [group]: { ...current.sections.intake[group], [key]: value } } } }));
+    const updateGlobal = (group, key, value) => setDraft((current) => ({ ...current, global: { ...current.global, [group]: { ...current.global[group], [key]: value } } }));
+    const saveDraft = () => router.patch(route('site-studio.save-draft'), { config: draft }, { preserveScroll: true, onSuccess: () => setSavedSnapshot(JSON.stringify(draft)) });
+    const publish = () => { if (!window.confirm('Publish the current Landing Studio draft to the public site?')) return; router.post(route('site-studio.publish'), {}, { preserveScroll: true, onSuccess: () => { setSavedSnapshot(JSON.stringify(draft)); setPublishedSnapshot(JSON.stringify(draft)); } }); };
+    const restore = (revision) => { if (!window.confirm(`Restore revision ${revision.revision} as the new draft?`)) return; router.post(route('site-studio.restore-revision', revision.id), {}, { preserveScroll: true, onSuccess: () => window.location.reload() }); };
+    const editorSections = [...landingSections, ...globalStudioSections.map((section) => ({ ...section, label: section.label }))];
 
-    const updateHero = (group, key, value) => {
-        setDraft((current) => ({
-            ...current,
-            hero: {
-                ...current.hero,
-                [group]: { ...current.hero[group], [key]: value },
-            },
-        }));
-    };
-
-    const updateContent = (key, value) => updateHero('content', locale === 'en' ? 'en' : 'id', { ...content, [key]: value });
-    const updateSecondaryPosition = (value) => setDraft((current) => ({
-        ...current,
-        hero: {
-            ...current.hero,
-            layout: { ...current.hero.layout, secondaryObjectPosition: value },
-            secondaryObject: { ...current.hero.secondaryObject, position: value === 'center' ? 'top' : value },
-        },
-    }));
-    const updateVisibility = (device, value) => setDraft((current) => ({
-        ...current,
-        hero: {
-            ...current.hero,
-            layout: { ...current.hero.layout, visibility: { ...current.hero.layout.visibility, [device]: value } },
-            secondaryObject: { ...current.hero.secondaryObject, [device]: value },
-        },
-    }));
-    const updateSectionContent = (sectionId, key, value) => setDraft((current) => ({
-        ...current,
-        sections: {
-            ...current.sections,
-            [sectionId]: {
-                ...current.sections[sectionId],
-                content: {
-                    ...current.sections[sectionId].content,
-                    [locale]: { ...current.sections[sectionId].content[locale], [key]: value },
-                },
-            },
-        },
-    }));
-    const updateSectionVisibility = (sectionId, value) => setDraft((current) => ({
-        ...current,
-        sections: { ...current.sections, [sectionId]: { ...current.sections[sectionId], visible: value } },
-    }));
-    const saveDraft = () => {
-        router.patch(route('site-studio.save-draft'), { config: draft }, { preserveScroll: true, onSuccess: () => setSavedSnapshot(JSON.stringify(draft)) });
-    };
-
-    const publish = () => {
-        if (!window.confirm('Publish the current Landing Studio draft to the public site?')) return;
-        router.post(route('site-studio.publish'), {}, { preserveScroll: true, onSuccess: () => { setSavedSnapshot(JSON.stringify(draft)); setPublishedSnapshot(JSON.stringify(draft)); } });
-    };
-
-    const restore = (revision) => {
-        if (!window.confirm(`Restore revision ${revision.revision} as the new draft?`)) return;
-        router.post(route('site-studio.restore-revision', revision.id), {}, { preserveScroll: true, onSuccess: () => window.location.reload() });
-    };
-
-    return (
-        <AdminLayout activeTab="site-studio" title="Landing Studio">
-            <Head title="Landing Studio | Systemify" />
-
-            <div className="space-y-6">
-                <section className="flex flex-col gap-5 border-b border-white/15 pb-6 xl:flex-row xl:items-center xl:justify-between">
-                    <div>
-                        <div className="flex items-center gap-2 font-mono text-[0.68rem] uppercase tracking-[0.1em] text-brand-lime"><PaintBrush size={15} weight="bold" /> Site / controlled configuration</div>
-                        <p className="mt-3 max-w-2xl text-sm leading-6 text-white/55">Change semantic landing decisions while the production renderer stays shared, bounded, and recognizable.</p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                        <span className={`inline-flex items-center gap-2 border px-3 py-2 font-mono text-[0.62rem] uppercase tracking-[0.08em] ${isUnsaved ? 'border-status-attention/50 text-status-attention' : 'border-white/15 text-white/55'}`}><span className={`status-dot status-dot--${isUnsaved ? 'attention' : 'operational'}`} />{isUnsaved ? 'Unsaved changes' : 'Draft saved'}</span>
-                        <span className="border border-white/15 px-3 py-2 font-mono text-[0.62rem] uppercase tracking-[0.08em] text-white/45">Revision {configuration?.revision || 0}</span>
-                        <button type="button" onClick={saveDraft} disabled={!isUnsaved} className="button-secondary py-2 text-[0.65rem] text-white/80 disabled:opacity-40"><FloppyDisk size={15} /> Save draft</button>
-                        <button type="button" onClick={publish} disabled={!hasUnpublishedChanges || isUnsaved} className="button-primary py-2 text-[0.65rem] disabled:opacity-40" title={isUnsaved ? 'Save the draft before publishing.' : undefined}><RocketLaunch size={15} /> Publish</button>
-                    </div>
-                </section>
-
-                <div className="grid gap-5 xl:grid-cols-[11rem_minmax(0,1fr)_21rem]">
-                    <aside className="border border-white/15 bg-white/[0.02] p-3">
-                        <p className="px-2 pb-3 font-mono text-[0.62rem] uppercase tracking-[0.1em] text-white/35">Sections</p>
-                        <nav aria-label="Landing sections" className="space-y-1">
-                            {landingSections.map((section, index) => <button key={section.id} type="button" onClick={() => setActiveSection(section.id)} className={`flex w-full items-center gap-2 border-l-2 px-2 py-2.5 text-left text-xs ${activeSection === section.id ? 'border-brand-lime bg-white/7 text-white' : 'border-transparent text-white/50 hover:bg-white/5 hover:text-white'}`} aria-pressed={activeSection === section.id}><span className="font-mono text-[0.6rem] text-brand-blue">0{index + 1}</span>{section.label}</button>)}
-                        </nav>
-                        <div className="mt-7 border-t border-white/10 pt-4"><p className="px-2 font-mono text-[0.6rem] uppercase tracking-[0.1em] text-white/30">Public state</p><p className="mt-2 px-2 text-xs leading-5 text-white/45">Only published configuration reaches the public landing page.</p></div>
-                    </aside>
-
-                    <section className="min-w-0 border border-white/15 bg-brand-ink p-3 sm:p-5" aria-label="Landing preview">
-                        <div className="mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3"><div className="flex items-center gap-2"><Eye size={16} className="text-brand-lime" /><span className="font-mono text-[0.62rem] uppercase tracking-[0.1em] text-white/45">Live preview / {activeSection}</span></div><div className="flex flex-wrap gap-1">{viewportOptions.map((option) => <button key={option} type="button" onClick={() => setViewport(option)} className={`border px-2 py-1 font-mono text-[0.6rem] ${viewport === option ? 'border-brand-lime text-brand-lime' : 'border-white/15 text-white/45 hover:text-white'}`} aria-pressed={viewport === option}>{option}</button>)}</div></div>
-                        <div className={`overflow-auto border border-white/10 bg-brand-paper ${viewportClass}`}>
-                            <div style={{ width: `${viewport}px`, minWidth: `${viewport}px` }} className="origin-top-left">
-                                <LandingRenderer portfolios={portfolios} landingConfig={draft} motionKey={motionKey} preview />
-                            </div>
-                        </div>
-                    </section>
-
-                    <aside className="border border-white/15 bg-white/[0.02] p-4 sm:p-5">
-                        {activeSection === 'hero' ? <>
-                            <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-4"><div><p className="mono-meta text-brand-lime">Hero inspector</p><h2 className="mt-2 text-lg font-semibold text-white">Controlled decisions</h2></div><div className="flex border border-white/15 p-0.5"><button type="button" onClick={() => setLocale('en')} className={`px-2 py-1 font-mono text-[0.6rem] ${locale === 'en' ? 'bg-brand-lime text-brand-dark' : 'text-white/45'}`}>EN</button><button type="button" onClick={() => setLocale('id')} className={`px-2 py-1 font-mono text-[0.6rem] ${locale === 'id' ? 'bg-brand-lime text-brand-dark' : 'text-white/45'}`}>ID</button></div></div>
-                            <div className="mt-4 grid grid-cols-2 gap-1 border-b border-white/10 pb-4">{inspectorTabs.map(({ id, label, icon: Icon }) => <button type="button" key={id} onClick={() => setActiveTab(id)} className={`flex items-center justify-center gap-1 px-2 py-2 text-[0.65rem] ${activeTab === id ? 'bg-brand-blue text-white' : 'text-white/45 hover:bg-white/5 hover:text-white'}`} aria-pressed={activeTab === id}><Icon size={13} />{label}</button>)}</div>
-
-                            {activeTab === 'content' && <div className="mt-5 space-y-5"><TextField label="Eyebrow" value={content.eyebrow} onChange={(value) => updateContent('eyebrow', value)} /><TextField label="Headline" value={content.headline} onChange={(value) => updateContent('headline', value)} multiline /><TextField label="Supporting copy" value={content.description} onChange={(value) => updateContent('description', value)} multiline /><TextField label="Primary CTA" value={content.primaryCta} onChange={(value) => updateContent('primaryCta', value)} /><TextField label="Secondary CTA" value={content.secondaryCta} onChange={(value) => updateContent('secondaryCta', value)} /></div>}
-
-                            {activeTab === 'layout' && <div className="mt-5 space-y-5"><OptionGroup label="Horizontal alignment" value={draft.hero.layout.alignment} options={['left', 'center', 'right'].map((value) => ({ value, label: value }))} onChange={(value) => updateHero('layout', 'alignment', value)} /><OptionGroup label="Vertical alignment" value={draft.hero.layout.verticalAlignment} options={['start', 'center', 'end'].map((value) => ({ value, label: value }))} onChange={(value) => updateHero('layout', 'verticalAlignment', value)} /><OptionGroup label="Content width" value={draft.hero.layout.contentWidth} options={['compact', 'wide', 'full'].map((value) => ({ value, label: value }))} onChange={(value) => updateHero('layout', 'contentWidth', value)} /><OptionGroup label="Hero height" value={draft.hero.layout.height} options={['auto', 'tall', 'full'].map((value) => ({ value, label: value }))} onChange={(value) => updateHero('layout', 'height', value)} /><OptionGroup label="Secondary object" value={draft.hero.layout.secondaryObjectPosition} options={['left', 'center', 'right'].map((value) => ({ value, label: value }))} onChange={updateSecondaryPosition} /><fieldset className="border-t border-white/10 pt-4"><legend className="font-mono text-[0.62rem] uppercase tracking-[0.1em] text-white/40">Visibility</legend><div className="mt-3 space-y-2">{['desktop', 'tablet', 'mobile'].map((device) => <label key={device} className="flex items-center justify-between gap-3 text-xs text-white/65"><span className="capitalize">{device}</span><input type="checkbox" checked={draft.hero.layout.visibility[device]} onChange={(event) => updateVisibility(device, event.target.checked)} className="h-4 w-4 border-white/20 bg-white/5 text-brand-lime focus:ring-brand-lime" /></label>)}</div></fieldset></div>}
-
-                            {activeTab === 'shape' && <div className="mt-5 space-y-6"><div><p className="font-mono text-[0.62rem] uppercase tracking-[0.1em] text-white/40">Surface preset</p><div className="mt-3 grid grid-cols-2 gap-2">{shapeOptions.map(({ value }) => <ShapePreview key={value} shape={value} active={draft.cards.shape === value} onClick={() => setDraft((current) => ({ ...current, cards: { ...current.cards, shape: value } }))} />)}</div></div><div className="border-t border-white/10 pt-4"><p className="font-mono text-[0.62rem] uppercase tracking-[0.1em] text-white/40">Highlight style</p><OptionGroup label="" value={draft.hero.highlight.style} options={['none', 'marker', 'underline', 'offset-block', 'signal-line'].map((value) => ({ value, label: value }))} onChange={(value) => updateHero('highlight', 'style', value)} /><div className="mt-4"><TextField label="Highlighted phrase" value={locale === 'en' ? draft.hero.highlight.text : draft.hero.highlight.textId} onChange={(value) => updateHero('highlight', locale === 'en' ? 'text' : 'textId', value)} /></div><div className="mt-4"><OptionGroup label="Highlight width" value={draft.hero.highlight.width} options={['compact', 'balanced', 'wide'].map((value) => ({ value, label: value }))} onChange={(value) => updateHero('highlight', 'width', value)} /></div><div className="mt-4"><OptionGroup label="Highlight shape" value={draft.hero.highlight.shape} options={shapeOptions} onChange={(value) => updateHero('highlight', 'shape', value)} /></div></div></div>}
-
-                            {activeTab === 'motion' && <div className="mt-5 space-y-5"><div><p className="font-mono text-[0.62rem] uppercase tracking-[0.1em] text-white/40">Preset</p><div className="mt-3 space-y-2">{motionPresets.map((preset) => <button key={preset.value} type="button" onClick={() => updateHero('motion', 'preset', preset.value)} className={`w-full border p-3 text-left ${draft.hero.motion.preset === preset.value ? 'border-brand-lime bg-brand-lime/10' : 'border-white/15 hover:border-white/35'}`} aria-pressed={draft.hero.motion.preset === preset.value}><span className="block text-xs font-semibold text-white">{preset.label}</span><span className="mt-1 block text-[0.68rem] leading-5 text-white/45">{preset.description}</span></button>)}</div></div><OptionGroup label="Intensity" value={draft.hero.motion.intensity} options={motionIntensityOptions} onChange={(value) => updateHero('motion', 'intensity', value)} /><OptionGroup label="Scroll behavior" value={draft.hero.motion.scrollBehavior} options={motionScrollOptions} onChange={(value) => updateHero('motion', 'scrollBehavior', value)} /><OptionGroup label="Duration preset" value={draft.hero.motion.duration} options={motionDurationOptions} onChange={(value) => updateHero('motion', 'duration', value)} /><OptionGroup label="Delay preset" value={draft.hero.motion.delay} options={motionDelayOptions} onChange={(value) => updateHero('motion', 'delay', value)} /><button type="button" onClick={() => setMotionKey((value) => value + 1)} className="button-secondary w-full py-2 text-xs text-white"><ArrowClockwise size={15} /> Replay motion</button><p className="text-xs leading-5 text-white/40">Motion is enhancement only. Reduced-motion preferences disable it automatically.</p></div>}
-                        </> : <SectionInspector sectionId={activeSection} locale={locale} setLocale={setLocale} sectionConfig={draft.sections[activeSection]} onVisibilityChange={(value) => updateSectionVisibility(activeSection, value)} onContentChange={(key, value) => updateSectionContent(activeSection, key, value)} />}
-
-                        <div className="mt-8 border-t border-white/10 pt-5"><div className="flex items-center gap-2"><ClockCounterClockwise size={15} className="text-brand-lime" /><p className="font-mono text-[0.62rem] uppercase tracking-[0.1em] text-white/40">Revision history</p></div><div className="mt-3 space-y-2">{revisions.length > 0 ? revisions.map((revision) => <div key={revision.id} className="border-b border-white/10 pb-3 pt-2 last:border-b-0"><div className="flex items-center justify-between gap-3"><span className="text-xs font-semibold text-white">Revision {revision.revision}</span><button type="button" onClick={() => restore(revision)} className="text-[0.62rem] uppercase tracking-[0.08em] text-brand-lime hover:text-white">Restore draft</button></div><p className="mt-1 text-[0.68rem] text-white/40">{dateLabel(revision.published_at)} · {revision.publisher?.name || 'System operator'}</p></div>) : <p className="text-xs leading-5 text-white/40">No published revisions yet. Publish the first controlled configuration when ready.</p>}</div></div>
-                    </aside>
-                </div>
-            </div>
-        </AdminLayout>
-    );
+    return <AdminLayout activeTab="site-studio" title="Landing Studio"><Head title="Landing Studio | Systemify" /><div className="space-y-6"><section className="flex flex-col gap-5 border-b border-white/15 pb-6 xl:flex-row xl:items-center xl:justify-between"><div><div className="flex items-center gap-2 font-mono text-[0.68rem] uppercase tracking-[0.1em] text-brand-lime"><PaintBrush size={15} weight="bold" /> Site / controlled configuration</div><p className="mt-3 max-w-2xl text-sm leading-6 text-white/55">Edit meaningful public landing decisions while the production renderer stays shared, bounded, and recognizable.</p></div><div className="flex flex-wrap items-center gap-2"><span className={`inline-flex items-center gap-2 border px-3 py-2 font-mono text-[0.62rem] uppercase tracking-[0.08em] ${isUnsaved ? 'border-status-attention/50 text-status-attention' : 'border-white/15 text-white/55'}`}><span className={`status-dot status-dot--${isUnsaved ? 'attention' : 'operational'}`} />{isUnsaved ? 'Unsaved changes' : 'Draft saved'}</span><span className="border border-white/15 px-3 py-2 font-mono text-[0.62rem] uppercase tracking-[0.08em] text-white/45">Revision {configuration?.revision || 0}</span><button type="button" onClick={saveDraft} disabled={!isUnsaved} className="button-secondary py-2 text-[0.65rem] text-white/80 disabled:opacity-40"><FloppyDisk size={15} /> Save draft</button><button type="button" onClick={publish} disabled={!hasUnpublishedChanges || isUnsaved} className="button-primary py-2 text-[0.65rem] disabled:opacity-40" title={isUnsaved ? 'Save the draft before publishing.' : undefined}><RocketLaunch size={15} /> Publish</button></div></section>
+        <div className="grid gap-5 xl:grid-cols-[11rem_minmax(0,1fr)_24rem]"><aside className="border border-white/15 bg-white/[0.02] p-3"><p className="px-2 pb-3 font-mono text-[0.62rem] uppercase tracking-[0.1em] text-white/35">Sections</p><nav aria-label="Landing sections" className="space-y-1">{editorSections.map((section, index) => <button key={section.id} type="button" onClick={() => { setActiveSection(section.id); setActiveTab('content'); }} className={`flex w-full items-center gap-2 border-l-2 px-2 py-2.5 text-left text-xs ${activeSection === section.id ? 'border-brand-lime bg-white/7 text-white' : 'border-transparent text-white/50 hover:bg-white/5 hover:text-white'}`} aria-pressed={activeSection === section.id}><span className="font-mono text-[0.6rem] text-brand-blue">{String(index + 1).padStart(2, '0')}</span>{section.label}</button>)}</nav><div className="mt-7 border-t border-white/10 pt-4"><p className="px-2 font-mono text-[0.6rem] uppercase tracking-[0.1em] text-white/30">Public state</p><p className="mt-2 px-2 text-xs leading-5 text-white/45">Only published configuration reaches the public landing page.</p></div></aside><section className="min-w-0 border border-white/15 bg-brand-ink p-3 sm:p-5" aria-label="Landing preview"><div className="mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3"><div className="flex items-center gap-2"><Eye size={16} className="text-brand-lime" /><span className="font-mono text-[0.62rem] uppercase tracking-[0.1em] text-white/45">Live preview / {activeSection}</span></div><div className="flex flex-wrap gap-1">{viewportOptions.map((option) => <button key={option} type="button" onClick={() => setViewport(option)} className={`border px-2 py-1 font-mono text-[0.6rem] ${viewport === option ? 'border-brand-lime text-brand-lime' : 'border-white/15 text-white/45 hover:text-white'}`} aria-pressed={viewport === option}>{option}</button>)}</div></div><div className={`overflow-auto border border-white/10 bg-brand-paper ${viewportClass}`}><div style={{ width: `${viewport}px`, minWidth: `${viewport}px` }} className="origin-top-left"><LandingRenderer portfolios={portfolios} landingConfig={draft} motionKey={motionKey} preview /></div></div></section><aside className="border border-white/15 bg-white/[0.02] p-4 sm:p-5"><Inspector activeSection={activeSection} activeTab={activeTab} setActiveTab={setActiveTab} draft={draft} locale={locale} setLocale={setLocale} updateHero={updateHero} updateContent={updateContent} updateVisibility={updateVisibility} updateArray={updateArray} updatePresentation={updatePresentation} updateIntake={updateIntake} updateGlobal={updateGlobal} portfolios={portfolios} setDraft={setDraft} setMotionKey={() => setMotionKey((value) => value + 1)} /><div className="mt-8 border-t border-white/10 pt-5"><div className="flex items-center gap-2"><ClockCounterClockwise size={15} className="text-brand-lime" /><p className="font-mono text-[0.62rem] uppercase tracking-[0.1em] text-white/40">Revision history</p></div><div className="mt-3 space-y-2">{revisions.length > 0 ? revisions.map((revision) => <div key={revision.id} className="border-b border-white/10 pb-3 pt-2 last:border-b-0"><div className="flex items-center justify-between gap-3"><span className="text-xs font-semibold text-white">Revision {revision.revision}</span><button type="button" onClick={() => restore(revision)} className="text-[0.62rem] uppercase tracking-[0.08em] text-brand-lime hover:text-white">Restore draft</button></div><p className="mt-1 text-[0.68rem] text-white/40">{dateLabel(revision.published_at)} · {revision.publisher?.name || 'System operator'}</p></div>) : <p className="text-xs leading-5 text-white/40">No published revisions yet. Publish the first controlled configuration when ready.</p>}</div></div></aside></div></div></AdminLayout>;
 }
+
+const dateLabel = (value) => value ? new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)) : 'Not published';

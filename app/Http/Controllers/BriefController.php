@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Brief;
 use App\Models\AuditLog;
+use App\Models\SiteConfiguration;
+use App\Support\LandingConfiguration;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
@@ -44,16 +46,26 @@ class BriefController extends Controller
      */
     public function store(Request $request)
     {
+        $intakeFields = LandingConfiguration::normalize(SiteConfiguration::primary()->published_config)['sections']['intake']['fields'];
+        $requiredRule = static fn (string $key): string => ($intakeFields[$key]['required'] ?? false) ? 'required' : 'nullable';
+        $workflowRequiredKeys = collect(['current_workflow', 'operational_constraint', 'desired_change'])
+            ->filter(fn (string $key): bool => $intakeFields[$key]['required'] ?? false)
+            ->values()
+            ->all();
+        $workflowRule = static fn (string $key): string => ($intakeFields[$key]['required'] ?? false)
+            ? 'nullable|string|required_without:message'
+            : 'nullable|string';
+
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
-            'company' => 'nullable|string|max:255',
-            'current_workflow' => 'nullable|string|required_without:message',
-            'operational_constraint' => 'nullable|string|required_without:message',
-            'desired_change' => 'nullable|string|required_without:message',
-            'budget' => 'nullable|string|max:255',
-            'timeline' => 'nullable|string|max:255',
-            'message' => 'nullable|string|required_without_all:current_workflow,operational_constraint,desired_change',
+            'name' => $requiredRule('name') . '|string|max:255',
+            'email' => $requiredRule('email') . '|email|max:255',
+            'company' => $requiredRule('company') . '|string|max:255',
+            'current_workflow' => $workflowRule('current_workflow'),
+            'operational_constraint' => $workflowRule('operational_constraint'),
+            'desired_change' => $workflowRule('desired_change'),
+            'budget' => $requiredRule('budget') . '|string|max:255',
+            'timeline' => $requiredRule('timeline') . '|string|max:255',
+            'message' => $workflowRequiredKeys ? 'nullable|string|required_without_all:' . implode(',', $workflowRequiredKeys) : 'nullable|string',
         ]);
 
         $company = $validated['company'] ?? null;

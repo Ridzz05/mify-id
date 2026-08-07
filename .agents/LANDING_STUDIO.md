@@ -1,11 +1,12 @@
 # SYSTEMIFY / LANDING STUDIO
 ## Controlled Visual Configuration System
 
-> Status: Implemented, re-audited, and regression-tested.
+> Status: V2 full-page editability implemented and regression-tested.
 > Scope: Admin Site Studio + Public Landing Renderer
 > Principle: Customizable without sacrificing brand integrity.
 
 Re-audit notes: [.agents/LANDING_STUDIO_AUDIT.md](LANDING_STUDIO_AUDIT.md)
+Full editability directive: [.agents/LANDING_STUDIO_FULL_EDITABILITY.md](LANDING_STUDIO_FULL_EDITABILITY.md)
 
 ---
 

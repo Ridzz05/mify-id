@@ -8,12 +8,14 @@ use Inertia\Inertia;
 Route::get('/', function () {
     $portfolios = [];
     $landingConfig = \App\Support\LandingConfiguration::defaults();
-    if (\Illuminate\Support\Facades\Schema::hasTable('portfolios')) {
-        $portfolios = \App\Models\Portfolio::where('is_featured', true)->orderBy('order', 'asc')->latest()->get();
-    }
     if (\Illuminate\Support\Facades\Schema::hasTable('site_configurations')) {
         $configuration = \App\Models\SiteConfiguration::where('name', 'Primary landing')->first();
         $landingConfig = \App\Support\LandingConfiguration::normalize($configuration?->published_config);
+    }
+    if (\Illuminate\Support\Facades\Schema::hasTable('portfolios')) {
+        // Selection and presentation are controlled by the published config; portfolio
+        // copy and evidence remain domain-owned records.
+        $portfolios = \App\Models\Portfolio::orderBy('order', 'asc')->latest()->get();
     }
 
     return Inertia::render('Welcome', [
