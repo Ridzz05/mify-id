@@ -9,20 +9,27 @@ import { shapeTokens } from '@/Pages/Landing/config/shapeTokens';
 import { useTranslation } from '@/Contexts/LanguageContext';
 import { ArrowRight, ArrowUpRight, Check, EnvelopeSimple, Globe, Lightning, Wrench } from '@phosphor-icons/react';
 
-gsap.registerPlugin(ScrollTrigger);
+gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 const heroAlignmentClasses = { left: 'items-start text-left', center: 'items-center text-center', right: 'items-end text-right' };
 const heroCtaClasses = { left: 'items-start sm:justify-start', center: 'items-center sm:justify-center', right: 'items-end sm:justify-end' };
-const heroVerticalClasses = { start: 'lg:items-start', center: 'lg:items-center', end: 'lg:items-end' };
+const heroVerticalClasses = { start: 'xl:items-start', center: 'xl:items-center', end: 'xl:items-end' };
 const heroWidthClasses = { compact: 'max-w-2xl', wide: 'max-w-4xl', full: 'max-w-none' };
 const heroHeightClasses = { auto: '', tall: 'min-h-[34rem]', full: 'min-h-[calc(100vh-4.75rem)]' };
-const secondaryPositionClasses = { left: 'lg:order-first', center: 'lg:col-start-4', right: '' };
+const secondaryPositionClasses = { left: 'xl:order-first', center: 'xl:col-start-4', right: '' };
 const highlightStyleClasses = { none: '', marker: 'hero-highlight', underline: 'hero-underline', 'offset-block': 'hero-highlight hero-highlight--offset', 'signal-line': 'hero-signal-line' };
 const highlightWidthClasses = { compact: 'hero-highlight--compact', balanced: 'hero-highlight--balanced', wide: 'hero-highlight--wide' };
 const disciplineIcons = { globe: Globe, lightning: Lightning, wrench: Wrench };
 
 const localizedValue = (value, locale) => value?.[locale] || value?.en || '';
-const responsiveVisibility = ({ desktop, tablet, mobile }) => [desktop ? '' : 'lg:hidden', tablet ? '' : 'md:max-lg:hidden', mobile ? '' : 'max-md:hidden'].filter(Boolean).join(' ');
+const responsiveVisibility = ({ desktop, tablet, mobile }, { preview = false, previewViewport = null } = {}) => {
+    if (preview && previewViewport) {
+        const state = previewViewport >= 1280 ? desktop : previewViewport >= 768 ? tablet : mobile;
+        return state ? '' : 'hidden';
+    }
+
+    return [desktop ? '' : 'xl:hidden', tablet ? '' : 'md:max-xl:hidden', mobile ? '' : 'max-md:hidden'].filter(Boolean).join(' ');
+};
 
 function StatusLine({ label, value, status = 'operational' }) {
     return (
@@ -40,7 +47,7 @@ function SectionIntro({ copy, light = false }) {
     return copy.intro ? <p className={`mt-6 max-w-md text-sm leading-7 ${light ? 'text-white/60' : 'text-brand-dark/62'}`}>{copy.intro}</p> : null;
 }
 
-export function LandingRenderer({ portfolios = [], landingConfig = {}, motionKey = 0, preview = false }) {
+export function LandingRenderer({ portfolios = [], landingConfig = {}, motionKey = 0, preview = false, previewViewport = null }) {
     const { locale } = useTranslation();
     const config = normalizeLandingConfig(landingConfig);
     const copy = (sectionId) => config.sections?.[sectionId]?.content?.[locale] || config.sections?.[sectionId]?.content?.en || {};
@@ -77,6 +84,12 @@ export function LandingRenderer({ portfolios = [], landingConfig = {}, motionKey
     const panelKey = { 'system-status': 'operatingModel', 'operating-model': 'operatingModel', workflow: 'workflow', 'active-project': 'activeProject' }[heroObject.type];
     const heroPanel = panelKey ? config.hero[panelKey] : null;
     const panelCopy = heroPanel ? localizedValue(heroPanel.content, locale) : {};
+    const compactPreview = preview && previewViewport && previewViewport < 1280;
+    const previewModeClass = preview && previewViewport ? previewViewport < 768 ? 'landing-renderer--mobile-preview' : previewViewport < 1280 ? 'landing-renderer--compact-preview' : '' : '';
+    const heroGridClass = compactPreview ? 'grid-cols-1' : 'xl:grid-cols-12';
+    const heroVerticalClass = compactPreview ? '' : heroVerticalClasses[heroLayout.verticalAlignment] || heroVerticalClasses.center;
+    const heroCopyGridClass = compactPreview ? '' : 'xl:col-span-7';
+    const heroPanelGridClass = compactPreview ? '' : `xl:col-span-5 ${secondaryPositionClasses[heroLayout.secondaryObjectPosition] || ''}`;
     const label = (key) => localizedValue(presentation.fieldLabels[key], locale);
     const missingValue = localizedValue(presentation.missingValue, locale);
     const valueOrMissing = (value) => value || missingValue;
@@ -84,26 +97,25 @@ export function LandingRenderer({ portfolios = [], landingConfig = {}, motionKey
     useGSAP(() => {
         const root = motionRoot.current;
         if (!root || motion.preset === 'none' || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-        const intensity = { subtle: 0.7, standard: 1, expressive: 1.25 }[motion.intensity] || 0.7;
         const duration = { quick: 0.45, standard: 0.7, long: 1.1 }[motion.duration] || 0.7;
         const delay = { none: 0, short: 0.12, staggered: 0.2 }[motion.delay] || 0;
-        const scrollTrigger = motion.scrollBehavior === 'none' ? undefined : { trigger: root, start: 'top 82%', once: motion.scrollBehavior !== 'scrub' };
+        const scrollTrigger = preview || motion.scrollBehavior === 'none' ? undefined : { trigger: root, start: 'top 82%', once: motion.scrollBehavior !== 'scrub' };
         const reveal = (selector, options = {}) => {
             const targets = gsap.utils.toArray(selector, root);
             if (!targets.length) return;
-            gsap.fromTo(targets, { autoAlpha: 0, y: 20 * intensity }, { autoAlpha: 1, y: 0, duration, delay, ease: 'power2.out', stagger: 0.08, scrollTrigger, ...options });
+            gsap.fromTo(targets, { autoAlpha: 0 }, { autoAlpha: 1, duration, delay, ease: 'power2.out', stagger: 0.08, scrollTrigger, ...options });
         };
         if (motion.preset === 'editorial-reveal') reveal('[data-motion="hero"]');
         if (motion.preset === 'system-stagger') reveal('[data-motion="system"]', { stagger: 0.12 });
-        if (motion.preset === 'evidence-reveal') reveal('[data-motion="evidence"]', { y: 28 * intensity });
+        if (motion.preset === 'evidence-reveal') reveal('[data-motion="evidence"]');
         if (motion.preset === 'signal-wipe') {
             const highlight = root.querySelector('[data-motion="highlight"]');
-            if (highlight) gsap.fromTo(highlight, { clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0% 0 0)', duration, delay, ease: 'power2.out', scrollTrigger });
+            if (highlight) gsap.fromTo(highlight, { autoAlpha: 0 }, { autoAlpha: 1, duration, delay, ease: 'power2.out', scrollTrigger });
         }
         if (motion.preset === 'process-progress') {
-            gsap.utils.toArray('[data-motion="process"]', root).forEach((row, index) => gsap.fromTo(row, { autoAlpha: 0.35 }, { autoAlpha: 1, duration: duration * 0.75, delay: index * 0.05, ease: 'none', scrollTrigger: { trigger: row, start: 'top 82%', end: 'top 42%', scrub: motion.scrollBehavior === 'scrub' } }));
+            gsap.utils.toArray('[data-motion="process"]', root).forEach((row, index) => gsap.fromTo(row, { autoAlpha: 0.35 }, { autoAlpha: 1, duration: duration * 0.75, delay: index * 0.05, ease: 'none', scrollTrigger: preview || motion.scrollBehavior === 'none' ? undefined : { trigger: row, start: 'top 82%', end: 'top 42%', scrub: motion.scrollBehavior === 'scrub' } }));
         }
-    }, { scope: motionRoot, dependencies: [motionKey, motion.preset, motion.intensity, motion.scrollBehavior, motion.duration, motion.delay] });
+    }, { scope: motionRoot, dependencies: [motionKey, motion.preset, motion.intensity, motion.scrollBehavior, motion.duration, motion.delay, preview, previewViewport], revertOnUpdate: true });
 
     const renderHeroHeadline = () => {
         if (config.hero.highlight.style === 'none' || !heroHighlightText || !heroHeadline.includes(heroHighlightText)) return heroHeadline;
@@ -119,13 +131,13 @@ export function LandingRenderer({ portfolios = [], landingConfig = {}, motionKey
 
     return (
         <AppLayout title={localizedValue(config.global.meta.title, locale)} description={localizedValue(config.global.meta.description, locale)} containerClassName="w-full" landingConfig={config}>
-            <div ref={motionRoot} className="landing-renderer">
+            <div ref={motionRoot} className={`landing-renderer ${previewModeClass}`}>
                 <section id="hero" className={`border-b border-brand-dark/15 py-20 sm:py-28 ${heroHeightClasses[heroLayout.height] || ''}`}>
-                    <div className={`site-container grid gap-14 lg:grid-cols-12 ${heroVerticalClasses[heroLayout.verticalAlignment] || heroVerticalClasses.center}`}>
-                        <div data-motion="hero" className={`flex flex-col lg:col-span-7 ${heroAlignmentClasses[heroLayout.alignment] || heroAlignmentClasses.left}`}>
+                    <div className={`site-container min-w-0 grid gap-14 ${heroGridClass} ${heroVerticalClass}`}>
+                        <div data-motion="hero" className={`min-w-0 flex flex-col ${heroCopyGridClass} ${heroAlignmentClasses[heroLayout.alignment] || heroAlignmentClasses.left}`}>
                             <p className="eyebrow">{heroContent.eyebrow}</p>
-                            <h1 className={`mt-7 ${heroWidthClasses[heroLayout.contentWidth] || heroWidthClasses.wide} text-[clamp(3.25rem,7vw,7.5rem)] font-semibold leading-[0.92] tracking-[-0.075em]`}>{renderHeroHeadline()}</h1>
-                            <p className={`mt-8 ${heroWidthClasses[heroLayout.contentWidth] || heroWidthClasses.wide} text-lg leading-8 text-brand-dark/68 sm:text-xl`}>{heroContent.description}</p>
+                            <h1 className={`mt-7 min-w-0 whitespace-pre-line break-words ${heroWidthClasses[heroLayout.contentWidth] || heroWidthClasses.wide} text-[clamp(3.25rem,7vw,7.5rem)] font-semibold leading-[0.92] tracking-[-0.075em]`}>{renderHeroHeadline()}</h1>
+                            <p className={`mt-8 min-w-0 ${heroWidthClasses[heroLayout.contentWidth] || heroWidthClasses.wide} text-lg leading-8 text-brand-dark/68 sm:text-xl`}>{heroContent.description}</p>
                             <div className={`mt-9 flex flex-col gap-3 sm:flex-row sm:items-center ${heroCtaClasses[heroLayout.alignment] || heroCtaClasses.left}`}>
                                 <a href={heroContent.primaryTarget} className="button-ink">{heroContent.primaryCta} <ArrowRight size={16} weight="bold" /></a>
                                 <a href={heroContent.secondaryTarget} className="button-secondary">{heroContent.secondaryCta} <ArrowUpRight size={16} weight="bold" /></a>
@@ -135,8 +147,8 @@ export function LandingRenderer({ portfolios = [], landingConfig = {}, motionKey
                             </div>
                         </div>
 
-                        {heroPanel && <div data-motion="hero" className={`lg:col-span-5 ${secondaryPositionClasses[heroLayout.secondaryObjectPosition] || ''} ${responsiveVisibility(heroObject)}`}>
-                            <div className={`bg-brand-dark p-5 text-white sm:p-7 ${shapeTokens[config.cards.shape]?.className || ''}`}>
+                        {heroPanel && <div data-motion="hero" className={`min-w-0 ${heroPanelGridClass} ${responsiveVisibility(heroObject, { preview, previewViewport })}`}>
+                            <div className={`min-w-0 bg-brand-dark p-5 text-white sm:p-7 ${shapeTokens[config.cards.shape]?.className || ''}`}>
                                 <div className="flex items-start justify-between gap-5 border-b border-white/15 pb-5">
                                     <div><p className="mono-meta text-brand-lime">{panelCopy.eyebrow}</p><p className="mt-2 text-sm text-white/55">{panelCopy.description}</p></div>
                                     <span className="flex items-center gap-2 font-mono text-[0.64rem] uppercase text-white/70"><span className={`status-dot status-dot--${heroPanel.status || 'operational'}`} /> {panelCopy.statusLabel}</span>

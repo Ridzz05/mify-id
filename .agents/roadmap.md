@@ -32,6 +32,12 @@ Setiap agen yang menyelesaikan tugas terstruktur (membuat fitur baru, mengubah a
 - **Behavior:** The mark follows EN/ID locale changes, headline edits, phrase edits, disabled highlight style, special characters, and textarea scrolling without changing the persisted config shape or public renderer. Editors can now select any phrase in the headline and click `Mark selected text` to save the current locale's highlight phrase; selecting also enables the marker style when it was disabled.
 - **Verification:** Vite production build and the full PHP test suite pass.
 
+### [08 Agustus 2026] - Motion and Layout Stability Hardening
+- **Root cause:** GSAP entrance motion translated layout-bearing regions, signal wipe clipped inline highlight text, and replay/config updates did not explicitly revert prior animation contexts. The Studio canvas also changed width without changing the renderer's responsive mode.
+- **Motion contract:** GSAP now uses `revertOnUpdate`, preview motion avoids the outer-page ScrollTrigger, and all semantic presets preserve final geometry by animating opacity only. Reduced-motion behavior remains content-complete.
+- **Structure contract:** The shared renderer uses a genuine wide-only Hero split, selected preview widths drive Hero responsive mode, text-bearing grid regions shrink safely, and headline line breaks are preserved. Studio now offers `Mark + new line` for controlled editorial placement.
+- **Verification:** `npm run test:frontend`, `npm run build`, `php artisan test`, and `git diff --check` pass. Browser visual automation remains unavailable in this context.
+
 ### [08 Agustus 2026] - Landing Studio V2 Full-Page Editability
 - **Gap closed:** Replaced the previous Hero-first/heading-only Studio with a V2 normalized contract covering global shell copy, hero panels/meta/targets, discipline groups and items, systems selection/presentation, transformation rows, process steps, principles, intake field copy/success states, and semantic visibility/shape/motion controls.
 - **Ownership:** Public business copy is now Site Studio-owned; portfolio evidence remains domain-owned; form field names, section anchors, responsive CSS, and renderer/motion implementation remain immutable system UI.

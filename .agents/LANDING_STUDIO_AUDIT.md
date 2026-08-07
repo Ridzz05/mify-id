@@ -3,6 +3,18 @@
 Date: 2026-08-08
 Status: V2 implemented; code/runtime audit complete. Browser screenshots were not available in this context.
 
+## MOTION / STRUCTURE RE-AUDIT — implemented
+
+- GSAP updates now revert prior animation contexts and ScrollTriggers.
+- Entrance presets no longer translate layout-bearing text or clip inline
+  highlight content; preview motion does not depend on the outer page scroll.
+- The shared renderer receives the selected Studio viewport, uses a wide-only
+  Hero split, preserves headline line breaks, and applies shrink/wrap guards to
+  text-bearing structures.
+- Studio provides a controlled `Mark + new line` headline action.
+- `tests/frontend/landing-renderer-contract.test.mjs` locks the motion and
+  structural invariants; browser visual automation remains unavailable here.
+
 ## CURRENT GAPS — before V2
 
 The previous Landing Studio was PARTIAL. It exposed Hero copy/layout/shape/motion and scalar headings for other sections, while the meaningful repeated content, global shell copy, hero operating panels, systems presentation, intake field copy, CTA targets, and domain selection remained renderer-owned or hardcoded. Process and principles were explicitly renderer-owned. The requested `.agents/LANDING_STUDIO_FULL_EDITABILITY.md` file was also absent; the existing local directive was `.agents/LANDING_STUDIO_EDITABILITY.md`.

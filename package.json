@@ -4,7 +4,8 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "test:frontend": "node tests/frontend/landing-renderer-contract.test.mjs"
     },
     "devDependencies": {
         "@headlessui/react": "^2.0.0",

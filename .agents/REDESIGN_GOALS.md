@@ -1,6 +1,6 @@
 # SYSTEMIFY — REDESIGN GOALS 2026
 
-> Status: Design Direction / Pre-Implementation
+> Status: Active implementation / motion and structural hardening
 > Scope: Public website + application shell + admin experience
 > Priority: Brand clarity, professional visual language, usability
 > Rule: Do not begin large-scale UI implementation before understanding this document.
@@ -612,6 +612,50 @@ Every interactive element must have:
 - error where applicable
 
 Accessibility is a design requirement.
+
+# 16A. Motion & Structural Stability Goals
+
+Motion is allowed to reveal hierarchy, but it must never alter the
+geometry that makes the page readable.
+
+## Motion invariants
+
+- Motion must not translate layout-bearing text wrappers with `x` or `y`.
+- Motion must not apply `clip-path` to inline headline or highlighted text.
+- Motion updates and Studio replay must revert previous GSAP animations and
+  ScrollTriggers before creating new ones.
+- Preview motion must not depend on the browser viewport or the outer page
+  scroll container; the selected preview viewport is the source of truth.
+- `prefers-reduced-motion` must render complete content without hidden text,
+  delayed essential state, or altered layout.
+- Motion may change opacity or a bounded visual signal, provided the final
+  layout dimensions and line wrapping remain unchanged.
+
+## Structural invariants
+
+- Text-bearing grid and flex regions must be shrinkable (`min-width: 0`) and
+  wrap bounded copy instead of allowing it to enter an adjacent column.
+- The Hero must use a two-column composition only at a genuinely wide
+  viewport; tablet and mobile place the secondary object below the headline.
+- Site Studio viewport presets must control the renderer's responsive mode,
+  not only the width of a visual canvas inside the desktop browser.
+- Headline line breaks are intentional editorial data. The renderer must
+  preserve them, and the Studio may offer a controlled “mark and move to next
+  line” action.
+- The same structural safety rules apply to capabilities, systems evidence,
+  transformation rows, process steps, principles, and project intake.
+
+## Acceptance checks
+
+- Changing motion preset, duration, intensity, scroll behavior, or replaying
+  motion repeatedly does not change text bounding-box geometry or line wraps.
+- The marked phrase remains visible when it wraps across lines or is moved to
+  a new line.
+- 1440, 1024, 768, 390, and 360 previews do not clip text into the right-side
+  panel or outside their container.
+- The public page remains understandable with motion disabled.
+- Frontend contract checks, the Vite build, PHP tests, and `git diff --check`
+  pass before publishing.
 
 ---
 
